@@ -1,0 +1,19 @@
+{
+  "name": "gitview",
+  "version": "1.0.0",
+  "description": "IGME 330 Project 3",
+  "main": "src/server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Abhalphiest/gitView.git"
+  },
+  "author": "Margaret Dorsey",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Abhalphiest/gitView/issues"
+  },
+  "homepage": "https://github.com/Abhalphiest/gitView#readme"
+}
