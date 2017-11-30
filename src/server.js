@@ -22,6 +22,8 @@ https.createServer((request, response) => {
   let parsedUrl = url.parse(request.url);
   let params = query.parse(parsedUrl.query);
 
+  console.log(parsedUrl.pathname);
+
   //handle requests
   switch(parsedUrl.pathname){
 	case '/repo': {
@@ -50,7 +52,7 @@ function requestUserData(username, response){
 
 	var options = {
 		host: GITHUB_API_URL,
-		//path: '/users/'+username+'/repos'
+		path: '/users/'+username+'/repos'
 	};
 
 	var callback = function(xhrresponse){
