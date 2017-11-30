@@ -38,10 +38,10 @@ https.createServer((request, response) => {
 	  	requestUserData(params.username,response);
 	  	break;
 	}
-	// default:{
-	//   response.statusCode = 404;
-	//   response.end();
-	// }
+	default:{
+	  response.statusCode = 200;
+	  response.end();
+	}
   }
   
 }).listen(port);
