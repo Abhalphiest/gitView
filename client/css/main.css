@@ -1,0 +1,40 @@
+body{
+	background-color: #111;
+	color: #EEE;
+}
+
+
+#preview{
+	position:absolute;
+	background-color:#CCC;
+	width:500px;
+	height:500px;
+	top:15%;
+	right: 10%;
+}
+
+ul{
+	background-color:#444;
+	list-style-type:none;
+	margin:0;
+	padding:0;
+}
+
+#layout{
+	width:400px;
+	position:relative;
+	left:3%;
+}
+
+#layout li{
+	background-color:#CCC;
+	width: 100px;
+	height: 100px;
+	color: black;
+	float:left;
+	margin:10px;
+}
+
+#dropdown{
+	display:none;
+}

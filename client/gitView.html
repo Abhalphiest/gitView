@@ -2,20 +2,11 @@
 <html lang="en">
 <head>
 	<meta charset="utf-8" />
-	<title>XHR CSV Example</title>
-	<style>
-		*{
-			font-family:tahoma,verdana,sans-serif;
-		}
-		body{
-			padding: 50px;
-			background-color: #111;
-			color: #EEE;
-		}
-	</style>
+	<title>Git Viewer</title>
+	<link rel="stylesheet" type="text/css" href="css/main.css">
 	<script>
 	(function(){
-		const GITVIEW_URL = '';
+		const GITVIEW_URL = 'http://git-viewer.herokuapp.com';
 		window.onload = init;
 		
 		function init(){
@@ -40,7 +31,24 @@
 	</script>
 </head>
 <body>
+
+<label for="username">GitHub Username: </label> <input type="text" id="username">
+<!-- Custom select -->
+<label for="repositories">Repository: </label> <ul id="repositories"> </ul>
+<label for="layout"> Layout: </label> 	<ul id="layout"> 
+											<li> 1 </li>
+											<li> 2 </li>
+											<li> 3 </li>
+											<li> 4 </li>
+											<li> 5 </li>
+											<li> 6 </li>
+											<li> 7 </li>
+											<li> 8 </li>
+											<li> 9 </li>
+										</ul>
 	
-	
+<div id="preview"> </div>
+
+<ul id="dropdown"></ul>
 </body>
 </html>
