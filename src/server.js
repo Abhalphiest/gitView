@@ -1,13 +1,13 @@
 "use strict"
 
-const http = require('http');
+const https = require('https');
 const url = require('url');
 const query = require('querystring');
 const port = process.env.PORT || process.env.NODE_PORT || 3000;
 
 const GITHUB_API_URL = "https://api.github.com";
 
-http.createServer((request, response) => {
+https.createServer((request, response) => {
 
   // handle errors
   request.on('error', (err) => {
@@ -60,7 +60,7 @@ function requestUserData(username, response){
   		response.end();
 	};
 
-	http.request(options,callback).end();
+	https.request(options,callback).end();
 
 	response.write('getting user');
 }
