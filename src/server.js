@@ -39,8 +39,8 @@ https.createServer((request, response) => {
 	  	break;
 	}
 	default:{
-	  response.statusCode = 200;
-	  response.end();
+	   response.writeHead(200);
+   		response.end('Words');
 	}
   }
   
