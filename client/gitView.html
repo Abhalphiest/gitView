@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>XHR CSV Example</title>
+	<style>
+		*{
+			font-family:tahoma,verdana,sans-serif;
+		}
+		body{
+			padding: 50px;
+			background-color: #111;
+			color: #EEE;
+		}
+	</style>
+	<script>
+	(function(){
+		const GITVIEW_URL = '';
+		window.onload = init;
+		
+		function init(){
+			
+		}
+		
+		function loadData(queryString){
+
+			var xhr = new XMLHttpRequest();
+		
+			xhr.onload = function(){
+				var response = xhr.responseText;
+				document.querySelector('#content').innerHTML = response;
+			}
+			
+			var url = filepath;
+			xhr.open('GET',url,true);
+			xhr.send();
+		}
+	
+	}())
+	</script>
+</head>
+<body>
+	
+	
+</body>
+</html>
