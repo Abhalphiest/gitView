@@ -10,22 +10,26 @@
 		window.onload = init;
 		
 		function init(){
-			
-		}
-		
-		function loadData(queryString){
+			// set up username search
+			document.querySelector("#username").onchange = function(){
+				queryUsername(this.value);
+			};
 
-			var xhr = new XMLHttpRequest();
-		
-			xhr.onload = function(){
-				var response = xhr.responseText;
-				document.querySelector('#content').innerHTML = response;
-			}
-			
-			var url = filepath;
-			xhr.open('GET',url,true);
-			xhr.send();
+			// also use enter key
+
+			// also use submit button..?
+
 		}
+		
+		function queryUsername(username){
+			// get list of repositories
+			var repolist
+
+			//populate repositories
+			var reposelect = document.querySelector("#repositories");
+
+		}
+		
 	
 	}())
 	</script>
