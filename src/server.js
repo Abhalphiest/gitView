@@ -6,7 +6,7 @@ const url = require('url');
 const query = require('querystring');
 const port = process.env.PORT || process.env.NODE_PORT || 3000;
 
-const GITHUB_API_URL = "api.github.com";
+const GITHUB_API_URL = "https://api.github.com";
 
 http.createServer((request, response) => {
 
@@ -53,6 +53,7 @@ function requestUserData(username, response){
 
 	var options = {
 		hostname: GITHUB_API_URL,
+		family: 4,
 		path: '/users/'+username+'/repos'
 	};
 
