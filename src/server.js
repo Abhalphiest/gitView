@@ -52,7 +52,7 @@ function requestUserData(username, response){
 
 	var options = {
 		host: GITHUB_API_URL,
-		path: '/user/'+username+'/repos'
+		path: '/users/'+username+'/repos'
 	};
 
 	var callback = function(xhrresponse){
