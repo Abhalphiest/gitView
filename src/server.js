@@ -49,7 +49,7 @@ console.log("Listening on localhost:"+ port);
 function requestUserData(username, response){
 
 	var options = {
-		host: githubAPIurl,
+		host: GITHUB_API_URL,
 		path: '/users/'+username+'/repos'
 	};
 
