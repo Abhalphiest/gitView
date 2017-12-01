@@ -52,7 +52,7 @@ console.log("Listening on localhost:"+ port);
 function requestUserData(username, response){
 
 	var options = {
-		host: GITHUB_API_URL,
+		hostname: GITHUB_API_URL,
 		path: '/users/'+username+'/repos',
 		port: 443
 	};
@@ -66,7 +66,7 @@ function requestUserData(username, response){
   		response.end();
 	};
 
-	http.request(options,callback).end();
+	https.request(options,callback).end();
 
 	response.write('getting user');
 }
