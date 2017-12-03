@@ -34,12 +34,13 @@ http.createServer((request, response) => {
 	  	response.end();
 	  	break;
 	}
-	case '/user':{
-	  	requestUserData(params.username,response);
+	case '/user/repos':{
+	  	requestUserRepos(params.username,response);
 	  	break;
 	}
 	default:{
 	   	response.writeHead(200);
+	   	//todo : add instructions here
    		response.end('Words');
 	}
   }
@@ -48,12 +49,19 @@ http.createServer((request, response) => {
 
 console.log("Listening on localhost:"+ port);
 
-function requestUserData(username, response){
+function requestUserRepos(username, response){
 
 	
 
 	var callback = function(error, res, body){
-		response.write(JSON.stringify(body));
+		//response.write(JSON.stringify(body));
+
+		var repos = JSON.parse(body);
+		var names = [];
+		repos.forEach(function(repo){
+			names.push(repo.name);
+		});
+		response.write(JSON.stringify(names));
 		response.end();
 	};
 
