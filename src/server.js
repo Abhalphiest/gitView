@@ -4,9 +4,12 @@ const http = require('http');
 const https = require('https');
 const url = require('url');
 const query = require('querystring');
+const githubApi = require('github');
+const requestHandler = require('request');
 const port = process.env.PORT || process.env.NODE_PORT || 3000;
 
 const GITHUB_API_URL = "https://api.github.com";
+
 
 http.createServer((request, response) => {
 
@@ -23,19 +26,15 @@ http.createServer((request, response) => {
   let parsedUrl = url.parse(request.url);
   let params = query.parse(parsedUrl.query);
 
-  console.log(parsedUrl.pathname);
-
   //handle requests
   switch(parsedUrl.pathname){
 	case '/repo': {
-	  	console.log('finding repo');
 	  	response.statusCode = 200;
 	  	response.write('finding repo');
 	  	response.end();
 	  	break;
 	}
 	case '/user':{
-	  	console.log('getting user');
 	  	requestUserData(params.username,response);
 	  	break;
 	}
@@ -51,22 +50,24 @@ console.log("Listening on localhost:"+ port);
 
 function requestUserData(username, response){
 
-	var options = {
-		hostname: GITHUB_API_URL,
-		path: '/users/'+username+'/repos',
-		port: 443
+	
+
+	var callback = function(error, res, body){
+		response.write(JSON.stringify(body));
+		response.end();
 	};
 
-	console.log(options.path);
+	sendGithubRequest("/users/" + username + "/repos", callback);
+	
+}
 
-	var callback = function(xhrresponse){
-		console.log(xhrresponse);
-		response.statusCode = 200;
-		response.write(xhrresponse);
-  		response.end();
+function sendGithubRequest(path, callback){
+	var requestOptions = {
+		url: GITHUB_API_URL + path,
+		headers:{
+			'User-Agent':'request'
+		}
 	};
 
-	https.request(options,callback).end();
-
-	response.write('getting user');
+	requestHandler(requestOptions, callback);
 }
