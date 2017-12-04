@@ -69,6 +69,7 @@ http.createServer((request, response) => {
 	// 		Name
 	//		Description
 	//		ReadMe
+	//		Language
 	//		Number of Commits made by User
 	//		Percentage of Total Contribution (additions + deletions vs total)
 	//		File Directory Tree
@@ -81,9 +82,10 @@ http.createServer((request, response) => {
 	  		name: null,
 	  		description: null,
 	  		readme: null,
+	  		language: null,
 	  		commitCount: null,
 	  		contributionPercentage: null,
-	  		//fileDirectory: null,
+	  		fileDirectory: null,
 	  		lastUpdated: null
 	  	};
 
@@ -95,8 +97,8 @@ http.createServer((request, response) => {
 
 	  		let completed = true;
 	  		for(var property in repoData){
-	  			console.log(property);
-	  			console.log(repoData[property]);
+	  			//console.log(property);
+	  			//console.log(repoData[property]);
 	  			if(repoData.hasOwnProperty(property) && repoData[property] == null)
 	  				completed = false;
 	  		}
@@ -112,7 +114,7 @@ http.createServer((request, response) => {
 	  	requestRepoInformation(params.owner, params.reponame, setRepoData);
 	  	requestRepoAnalytics(params.owner, params.username, params.reponame, setRepoData);
 	  	requestRepoReadme(params.owner, params.reponame, setRepoData);
-	  	//requestRepoFileDirectory(params.owner, params.reponame, setRepoData);
+	  	requestRepoFileDirectory(params.owner, params.reponame, setRepoData);
 	  	break;
 	}
 
@@ -223,6 +225,7 @@ function requestRepoFile(username, repo, path, response){
 //						following fields: 
 //											name
 //											description
+//											language
 //											lastUpdated
 //
 // ---------------------------------------------------------------------------------
@@ -235,6 +238,7 @@ function requestRepoInformation(owner, reponame, repoData){
 		repoData('name', repo.name);
 		repoData('lastUpdated', repo.updated_at);
 		repoData('description', repo.description);
+		repoData('language', repo.language)
 	};
 
 	sendGithubRequest("/repos/" + owner + "/" + reponame, callback);
@@ -264,6 +268,7 @@ function requestRepoAnalytics(owner, username, reponame, repoData){
 
 	var callback = function(error, res, body){	
 		var contributorsArray = JSON.parse(body);
+		console.dir(contributorsArray);
 		var totalAdditionsDeletions = 0;
 		var commitCount = 0;
 		var additionsDeletions = 0;
@@ -377,6 +382,7 @@ function requestRepoFileDirectory(owner, reponame, repoData){
 	// because what I needed today was asynchronous recursion.
 	var callback = function(error, res, body){
 		var arr = JSON.parse(body);
+		console.log(arr);
 		arr.forEach(function(item){
 			var newNode = new TreeNode(this, item.type, item.name, item.path);
 			this.children.push(newNode);
