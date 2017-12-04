@@ -7,6 +7,7 @@
 	<script>
 	(function(){
 		const GITVIEW_URL = 'https://git-viewer.herokuapp.com';
+		const GITVIEW_TEST_URL = "http://localhost:3000/";
 		window.onload = init;
 		
 		function init(){
@@ -24,9 +25,25 @@
 		function queryUsername(username){
 			// get list of repositories
 			var repolist
-
+			console.log("querying username "+ username);
 			//populate repositories
 			var reposelect = document.querySelector("#repositories");
+
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function(){
+				if(this.readyState == 4 && this.status == 200){
+					console.dir(this.responseText);
+					var repos = JSON.parse(this.responseText);
+					repos.forEach(function(repo){
+						var li = document.createElement('li');
+						li.innerText = repo;
+						reposelect.appendChild(li);
+					});
+				}
+			};
+			xhttp.open("GET", GITVIEW_TEST_URL + "user/repos?username="+username);
+			console.log(GITVIEW_TEST_URL + "user/repos?username="+username);
+			xhttp.send();
 
 		}
 		
