@@ -83,22 +83,36 @@ http.createServer((request, response) => {
 	  		readme: null,
 	  		commitCount: null,
 	  		contributionPercentage: null,
-	  		fileDirectory: null,
+	  		//fileDirectory: null,
 	  		lastUpdated: null
 	  	};
 
 	  	// make sure this response object is always the same format
 	  	Object.seal(repoData);
 
+	  	function setRepoData(datatype, data){
+	  		repoData[datatype] = data;
+
+	  		let completed = true;
+	  		for(var property in repoData){
+	  			console.log(property);
+	  			console.log(repoData[property]);
+	  			if(repoData.hasOwnProperty(property) && repoData[property] == null)
+	  				completed = false;
+	  		}
+
+	  		if(completed){
+	  			response.write(JSON.stringify(repoData));
+	  			response.end();
+	  		}
+	  	}
+
 	  	// self-documenting function names, split up this way because they
 	  	// require different API calls and modularity is for cool kids
-	  	getRepoInformation(params.owner, params.reponame, repoData);
-	  	getRepoAnalytics(params.owner, params.username, params.reponame, repoData);
-	  	getRepoReadme(params.owner, params.reponame, repoData);
-	  	getRepoFileDirectory(params.owner, params.reponame, repoData);
-
-	  	response.write(JSON.stringify(repoData));
-	  	response.end();
+	  	requestRepoInformation(params.owner, params.reponame, setRepoData);
+	  	requestRepoAnalytics(params.owner, params.username, params.reponame, setRepoData);
+	  	requestRepoReadme(params.owner, params.reponame, setRepoData);
+	  	//requestRepoFileDirectory(params.owner, params.reponame, setRepoData);
 	  	break;
 	}
 
@@ -148,7 +162,7 @@ console.log("Listening on localhost:"+ port);
 //
 // ---------------------------------------------------------------------------------
 
-function requestUserRepos(owner, repo, path, response){
+function requestUserRepos(owner, response){
 	
 	var callback = function(error, res, body){	
 		var repos = JSON.parse(body);
@@ -177,7 +191,7 @@ function requestUserRepos(owner, repo, path, response){
 //
 // ---------------------------------------------------------------------------------
 
-function requestRepoFile(username, response){
+function requestRepoFile(username, repo, path, response){
 
 	var callbackPrime = function(error, res, body){
 		console.dir(body);
@@ -218,9 +232,9 @@ function requestRepoInformation(owner, reponame, repoData){
 	var callback = function(error, res, body){	
 		// set up a request for the actual file
 		var repo = JSON.parse(body);
-		repoData.name = repo.name;
-		repoData.lastUpdated = repo.updated_at;
-		repoData.description = repo.description;
+		repoData('name', repo.name);
+		repoData('lastUpdated', repo.updated_at);
+		repoData('description', repo.description);
 	};
 
 	sendGithubRequest("/repos/" + owner + "/" + reponame, callback);
@@ -271,11 +285,11 @@ function requestRepoAnalytics(owner, username, reponame, repoData){
 			totalAdditionsDeletions += contributorAdditionsDeletions;
 		});
 
-		repoData.commitCount = commitCount;
+		repoData('commitCount',commitCount);
 		if(totalAdditionsDeletions != 0)
-			repoData.contributionPercentage = additionsDeletions/totalAdditionsDeletions;
+			repoData('contributionPercentage',additionsDeletions/totalAdditionsDeletions);
 		else
-			repoData.contributionPercentage = 0;
+			repoData('contributionPercentage', 0);
 		
 	};
 
@@ -301,8 +315,7 @@ function requestRepoAnalytics(owner, username, reponame, repoData){
 function requestRepoReadme(owner, reponame, repoData){
 
 	var callbackPrime = function(error, res, body){
-		console.dir(body);
-		repoData.readme = body;
+		repoData('readme', body);
 	};
 	var callback = function(error, res, body){	
 		// set up a request for the actual file
@@ -312,7 +325,7 @@ function requestRepoReadme(owner, reponame, repoData){
 		};
 		requestHandler(requestOptions, callbackPrime);
 	};
-	sendGithubRequest("/repos/" + owner + "/" + repo + "/readme", callback);
+	sendGithubRequest("/repos/" + owner + "/" + reponame + "/readme", callback);
 }
 
 // --------------------------------------------------------------------------------
@@ -333,6 +346,23 @@ function requestRepoFileDirectory(owner, reponame, repoData){
 
 	// this.. is about to suck.
 
+	// need a closure for this hacky semaphore
+	var sem = function(){
+		let requestCount = 0;
+		var obj = {};
+		obj.openRequest = function(){
+			requestCount++;
+		};
+
+		obj.closeRequest = function(){
+			requestCount--;
+			if(requestCount == 0){ // done recursing
+				repoData('fileDirectory', directoryTree);
+			}
+		};
+		return obj;
+	}();
+
 	function TreeNode(parent, type, name, path){
 		this.parent = parent;	// for upwards navigation
 		this.type = type;		// dir or file
@@ -351,14 +381,15 @@ function requestRepoFileDirectory(owner, reponame, repoData){
 			var newNode = new TreeNode(this, item.type, item.name, item.path);
 			this.children.push(newNode);
 			if(item.type == "dir"){ 	// god, please forgive me for my trespasses, as I forgive those who tresspass against me
-				sendGithubRequest("/repos/" + owner + "/" + repo + "/contents/"+item.path, callback.bind(newNode));
+				sem.openRequest();
+				sendGithubRequest("/repos/" + owner + "/" + reponame + "/contents/"+item.path, callback.bind(newNode));
 			}
 		}.bind(this)); // this is the parent node of this call, because of the .bind on callback
+		sem.closeRequest();
 	};
 
-	sendGithubRequest("/repos/" + owner + "/" + repo + "/contents", callback.bind(directoryTree));
-
-	repoData.fileDirectory = directoryTree;
+	sem.openRequest();
+	sendGithubRequest("/repos/" + owner + "/" + reponame + "/contents", callback.bind(directoryTree));
 }
 
 // --------------------------------------------------------------------------------
