@@ -116,6 +116,16 @@ ul{
 	margin: 5px;
 }
 
+#textEditor{
+	display:none;
+}
+#codeGenerator{
+	display:none;
+}
+
+.directoryDiv{
+	
+}
 
 
 /* TEMPORARY CODE UNTIL SERVER IS FULLY IMPLEMENTED */

@@ -14,10 +14,13 @@
 
 const http = require('http');
 const https = require('https');
+const express = require('express');
 const url = require('url');
 const query = require('querystring');
 const requestHandler = require('request');
-const circularJSON = require('circular-json');
+const env = require('node-env-file');
+const githubStrategy = require('passport-github');
+const passport = require('passport');
 const port = process.env.PORT || process.env.NODE_PORT || 3000;
 
 
@@ -32,6 +35,36 @@ const responseHeaders = {
     "Content-Type": "application/json"
 };
 
+  // if environment variables are not defined, grab them locally
+  env(".env");
+
+  // get our environmental variables for authentication
+  const GITHUB_CLIENT_ID = process.env['GITHUB_CLIENT_ID'];
+  const GITHUB_CLIENT_SECRET = process.env['GITHUB_CLIENT_SECRET'];
+  const GITHUB_PERSONAL_TOKEN = process.env['GITHUB_PERSONAL_TOKEN']
+
+passport.use(new githubStrategy({
+  	clientID: GITHUB_CLIENT_ID,
+  	clientSecret: GITHUB_CLIENT_SECRET,
+  	callbackURL: "http://127.0.0.1:3000/auth/github/callback"
+  },
+  function(accessToken, refreshToken, profile, cb) {
+    User.findOrCreate({ githubId: profile.id }, function (err, user) {
+      return cb(err, user);
+    	});
+	}
+));
+
+
+
+passport.serializeUser(function(user, cb) {
+  cb(null, user);
+});
+
+passport.deserializeUser(function(obj, cb) {
+  cb(null, obj);
+});
+ 
 
 //------------------------------------
 //
@@ -39,111 +72,115 @@ const responseHeaders = {
 //
 //-------------------------------------
 
-http.createServer((request, response) => {
+var app = express();
 
-  // handle errors in both requests and responses
-  request.on('error', (err) => {
-    console.error(err);
-    response.statusCode = 400;
-    response.end();
-  });
-  response.on('error', (err) => {
-    console.error(err);
-  });
+app.use(passport.initialize());
+app.use(passport.session());
+
+app.get('/',
+	function(req,res){
+		res.writeHead(200, responseHeaders);
+		res.end();
+});
+
+app.get('auth/github', passport.authenticate('github'));
+
+app.get('auth/github/callback', 
+		passport.authenticate('github', {failureRedirect: '/login'}),
+		function(req,res){res.redirect('/')
+	});
+
+//--------------------------------------------------------------------------------
+//
+// The /repo path requests a specific repository, with owner, username, and reponame
+// querystring parameters. The returned JSON object contains a subset of the information
+// available, namely:
+// 		Name
+//		Description
+//		ReadMe
+//		Language
+//		Number of Commits made by User
+//		Percentage of Total Contribution (additions + deletions vs total)
+//		File Directory Tree
+//		Last Updated Date
+//
+// ---------------------------------------------------------------------------------
+app.get('/repo', function(request, response){
+	// parse the request into a path and usable parameters
+  	let parsedUrl = url.parse(request.url);
+  	let params = query.parse(parsedUrl.query);
+	console.log('finding repo');
+  	var repoData = {
+  		readme: null,
+  		commitCount: null,
+  		contributionPercentage: null,
+  		fileDirectory: null,
+  	};
+
+  	// make sure this response object is always the same format
+  	Object.seal(repoData);
+
+  	function setRepoData(datatype, data){
+  		repoData[datatype] = data;
+
+  		let completed = true;
+  		for(var property in repoData){
+  			if(repoData.hasOwnProperty(property) && repoData[property] == null)
+  				completed = false;
+  		}
+
+  		if(completed){
+  			response.write(JSON.stringify(repoData));
+  			response.writeHead(200, responseHeaders);
+  			response.end();
+  		}
+  	}
+
+  	// self-documenting function names, split up this way because they
+  	// require different API calls and modularity is for cool kids
+  	requestRepoAnalytics(params.owner, params.username, params.reponame, setRepoData);
+  	requestRepoReadme(params.owner, params.reponame, setRepoData);
+  	requestRepoFileDirectory(params.owner, params.reponame, setRepoData);
+
+});
+
+// --------------------------------------------------------------------------------
+//
+// The /repo/file path returns a specific file from a repository, with owner, path, and reponame
+// querystring parameters. The returned JSON object contains the file as a single plaintext string.
+//
+// ---------------------------------------------------------------------------------
+app.get('/repo/file', function(request, response){
+	// parse the request into a path and usable parameters
+  	let parsedUrl = url.parse(request.url);
+  	let params = query.parse(parsedUrl.query);
+	requestRepoFile(params.owner, params.path, params.repo);
+
+});
 
 
-  // parse the request into a path and usable parameters
-  let parsedUrl = url.parse(request.url);
-  let params = query.parse(parsedUrl.query);
+// --------------------------------------------------------------------------------
+//
+// The /user/repos path returns an array of all the repos the user has contributed
+// to, with a username querystring parameter.
+//
+// ---------------------------------------------------------------------------------
+app.get('/user/repos', function(request, response){
+	// parse the request into a path and usable parameters
+  	let parsedUrl = url.parse(request.url);
+  	let params = query.parse(parsedUrl.query);
+	requestUserRepos(params.username,response);
+});
 
 
-  response.writeHead(200, responseHeaders);
-  console.log(parsedUrl.pathname);
-  //handle requests
-  switch(parsedUrl.pathname){
-
-
-	// --------------------------------------------------------------------------------
-	//
-	// The /repo path requests a specific repository, with owner, username, and reponame
-	// querystring parameters. The returned JSON object contains a subset of the information
-	// available, namely:
-	// 		Name
-	//		Description
-	//		ReadMe
-	//		Language
-	//		Number of Commits made by User
-	//		Percentage of Total Contribution (additions + deletions vs total)
-	//		File Directory Tree
-	//		Last Updated Date
-	//
-	// ---------------------------------------------------------------------------------
-	case '/repo': {  
-	  	console.log('finding repo');
-	  	var repoData = {
-	  		readme: null,
-	  		commitCount: null,
-	  		contributionPercentage: null,
-	  		fileDirectory: null,
-	  	};
-
-	  	// make sure this response object is always the same format
-	  	Object.seal(repoData);
-
-	  	function setRepoData(datatype, data){
-	  		repoData[datatype] = data;
-
-	  		let completed = true;
-	  		for(var property in repoData){
-	  			if(repoData.hasOwnProperty(property) && repoData[property] == null)
-	  				completed = false;
-	  		}
-
-	  		if(completed){
-	  			response.write(circularJSON.stringify(repoData));
-	  			response.end();
-	  		}
-	  	}
-
-	  	// self-documenting function names, split up this way because they
-	  	// require different API calls and modularity is for cool kids
-	  	requestRepoAnalytics(params.owner, params.username, params.reponame, setRepoData);
-	  	requestRepoReadme(params.owner, params.reponame, setRepoData);
-	  	requestRepoFileDirectory(params.owner, params.reponame, setRepoData);
-	  	break;
-	}
-
-
-	// --------------------------------------------------------------------------------
-	//
-	// The /repo/file path returns a specific file from a repository, with owner, path, and reponame
-	// querystring parameters. The returned JSON object contains the file as a single plaintext string.
-	//
-	// ---------------------------------------------------------------------------------
-	case '/repo/file':{
-		requestRepoFile(params.owner, params.path, params.repo);
-		break;
-	}	
-	// --------------------------------------------------------------------------------
-	//
-	// The /user/repos path returns an array of all the repos the user has contributed
-	// to, with a username querystring parameter.
-	//
-	// ---------------------------------------------------------------------------------
-	case '/user/repos':{
-	  	requestUserRepos(params.username,response);
-	  	break;
-	}
-	default:{
-	   	// $TODO : add instructions here
-	   	var rsponseJSON = {error: "Invalid path"};
-	   	response.writeHead(404, responseHeaders);
-   		response.write(JSON.stringify(rsponseJSON));
-   		response.end();
-	}
-  }
+// default functionality
+app.use(function(req, res){
+   res.sendStatus(404);
+});
   
-}).listen(port);
+
+app.listen(port);
+
 
 console.log("Listening on localhost:"+ port);
 
@@ -176,6 +213,7 @@ function requestUserRepos(username, response){
 			repos.push(new Repository(repo));
 		});
 		response.write(JSON.stringify(repos));
+		response.writeHead(200, responseHeaders);
 		response.end();
 	};
 	sendGithubRequest("/users/" + username + "/repos?type=all&sort=updated", callback);
@@ -201,6 +239,7 @@ function requestRepoFile(username, repo, path, response){
 	var callbackPrime = function(error, res, body){
 		console.dir(body);
 		response.write(body);
+		response.writeHead(200, responseHeaders);
 		response.end();
 	};
 
@@ -339,15 +378,14 @@ function requestRepoFileDirectory(owner, reponame, repoData){
 		return obj;
 	}();
 
-	function TreeNode(parent, type, name, path){
-		this.parent = parent;	// for upwards navigation
+	function TreeNode(type, name, path){
 		this.type = type;		// dir or file
 		this.children = []; 	// only relevant for directories
 		this.name = name;
 		this.path = path;
 	}
 
-	var directoryTree = new TreeNode(undefined, "dir", reponame, "/");
+	var directoryTree = new TreeNode("dir", reponame, "/");
 
 	// kind of a recursive thing going on here..
 	// because what I needed today was asynchronous recursion.
@@ -355,7 +393,7 @@ function requestRepoFileDirectory(owner, reponame, repoData){
 		var arr = JSON.parse(body);
 		console.log(arr);
 		arr.forEach(function(item){
-			var newNode = new TreeNode(this, item.type, item.name, item.path);
+			var newNode = new TreeNode(item.type, item.name, item.path);
 			this.children.push(newNode);
 			if(item.type == "dir"){ 	// god, please forgive me for my trespasses, as I forgive those who tresspass against me
 				sem.openRequest();

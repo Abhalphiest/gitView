@@ -24,7 +24,11 @@
   "dependencies": {
     "bluebird": "^3.5.1",
     "circular-json": "^0.4.0",
+    "express": "^4.16.2",
     "github": "^12.1.0",
+    "login-with": "^1.2.0",
+    "node-env-file": "^0.1.8",
+    "passport-github": "^1.1.0",
     "request": "^2.83.0"
   }
 }

@@ -5,6 +5,7 @@
 	<title>Git Viewer</title>
 	<link rel="stylesheet" type="text/css" href="css/main.css">
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<script src="js/fileExplorer.js"></script>
 	<script>
 	(function(){
 		const GITVIEW_URL = 'https://git-viewer.herokuapp.com/';
@@ -40,6 +41,8 @@
 				$('#dropdown').slideUp();
 			};
 
+			fileExplorer.initialize();
+
 		}
 		
 		function queryUsername(username){
@@ -64,8 +67,7 @@
 					}
 				}
 			};
-			xhttp.open("GET", GITVIEW_URL + "user/repos?username="+username);
-			console.log(GITVIEW_URL + "user/repos?username="+username);
+			xhttp.open("GET", GITVIEW_TEST_URL + "user/repos?username="+username);
 			xhttp.send();
 
 		}
@@ -80,6 +82,7 @@
 				queryAdvancedData(repositories[this.value]);
 			}
 
+			fileExplorer.reset(repo.fileDirectory);
 			document.querySelector("#n1").innerText = repo.name + "\n" + repo.description;
 			document.querySelector("#n5").innerText = "Language: " + repo.language + "\nLast Updated: " + repo.lastUpdated;
 		}
@@ -94,11 +97,10 @@
 					repo.fileDirectory = advancedData.fileDirectory;
 					repo.commitCount = advancedData.commitCount;
 					repo.contributionPercentage = advancedData.contributionPercentage;
-
 				}
 					
 			};
-			xhttp.open("GET", GITVIEW_URL + "repo?username="+currentUsername +"&reponame="+repo.name+"&owner=" +repo.owner);
+			xhttp.open("GET", GITVIEW_TEST_URL + "repo?username="+currentUsername +"&reponame="+repo.name+"&owner=" +repo.owner);
 			xhttp.send();
 		}
 
@@ -112,7 +114,15 @@
 			dropdown.style.left = x+"px";
 			dropdown.style.top = y+"px";
 			$('#dropdown').slideDown();
+			dropdown.value = node.id;
 		}
+
+		function fillNode(){
+
+		};
+		function editNode(){
+
+		};
 		
 	
 	}())
@@ -120,7 +130,9 @@
 </head>
 <body>
 
-<div>
+
+<!-- Top Bar -->
+<section>
 	<label for="username">GitHub Username: </label> <input type="text" id="username">
 	<!-- Custom select -->
 	<div id="repositoryControl">
@@ -129,8 +141,11 @@
 		</div>
 		<ul id="repositoryList"></ul>
 	</div>
-</div>
-<div id="layout">
+</section>
+
+
+<!-- Preview Elements -->
+<section id="layout">
 <label for="layout"> Layout: </label> 	<ul id="layoutList"> 
 											<li><img src="media/layout1.png" alt="layout 1"/></li>
 											<li> 2 </li>
@@ -142,16 +157,48 @@
 											<li> 8 </li>
 											<li> 9 </li>
 										</ul>
-</div>
+</section>
 	
-<div id="preview"> 
-	<div id="n1" class="previewNode"> </div>
-	<div id="n2" class="previewNode"> </div>
-	<div id="n3" class="previewNode"> </div>
-	<div id="n4" class="previewNode"> </div>
-	<div id="n5" class="previewNode"> </div>
-</div>
+<section id="preview"> 
+	<div id="n1" class="previewNode" value="none"> </div>
+	<div id="n2" class="previewNode" value="none"> </div>
+	<div id="n3" class="previewNode" value="none"> </div>
+	<div id="n4" class="previewNode" value="none"> </div>
+	<div id="n5" class="previewNode" value="none"> </div>
+</section>
 
-<ul id="dropdown"><li> This is a dropdown </li></ul>
+
+<!-- File Explorer -->
+<section id="fileExplorer">
+	<div id="rootDir" class="directoryDiv">
+	</div>
+</section>
+
+<!-- HTML/CSS/JS Code -->
+<section id="codeGenerator"> 
+	<div id="HTML"><label for="HTML"> HTML </label><div class="codeDisplay"> </div> </div>
+	<div id="CSS"> <label for="CSS"> CSS </label><div class="codeDisplay"> </div></div>
+	<div id="JS"> <label for="JS"> JavaScript </label><div class="codeDisplay"> </div></div>
+</section>
+
+<!-- Hidden elements (shown contextually) -->
+<ul id="dropdown">
+	<li id="titleFill" onclick="fillNode();">Title</li>
+	<li id="titleDescripFill" onclick="fillNode();">Title &amp; Description</li>
+	<li id="fileFill" onclick="fillNode();">File</li>
+	<li id="fileListFill" onclick="fillNode();">File List</li>
+	<li id="readmeFill" onclick="fillNode();">Readme</li>
+	<li id="contributionsFill" onclick="fillNode();">Contributions</li>
+	<li id="imageFill" onclick="fillNode();">Image</li>
+	<li id="editNode" onclick="editNode();">Edit</li>
+</ul>
+
+<div id="overlay"> </div>
+<section id="textEditor">
+	<input type="text" id="textField">
+	<div id="editorOptions"> 
+
+	</div>
+</section>
 </body>
 </html>
