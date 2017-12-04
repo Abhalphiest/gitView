@@ -7,11 +7,12 @@
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 	<script>
 	(function(){
-		const GITVIEW_URL = 'https://git-viewer.herokuapp.com';
+		const GITVIEW_URL = 'https://git-viewer.herokuapp.com/';
 		const GITVIEW_TEST_URL = "http://localhost:3000/";
 		window.onload = init;
 
 		var repositories = [];
+		var currentUsername = "";
 		
 		function init(){
 			// set up username search
@@ -27,6 +28,17 @@
 			};
 
 
+			document.querySelectorAll(".previewNode").forEach(function(node){
+					node.addEventListener('contextmenu', function(e){
+					e.preventDefault();
+					previewNodeContextMenu(e.target,e.clientX, e.clientY);
+					return false;
+				});
+			});
+
+			document.onclick= function(){
+				$('#dropdown').slideUp();
+			};
 
 		}
 		
@@ -39,6 +51,7 @@
 			var xhttp = new XMLHttpRequest();
 			xhttp.onreadystatechange = function(){
 				if(this.readyState == 4 && this.status == 200){
+					currentUsername = username;
 					document.querySelector("#repositoryControl").style.opacity = 1.0; // make it visible if it was hidden
 					console.dir(this.responseText);
 					repositories = JSON.parse(this.responseText);
@@ -51,8 +64,8 @@
 					}
 				}
 			};
-			xhttp.open("GET", GITVIEW_TEST_URL + "user/repos?username="+username);
-			console.log(GITVIEW_TEST_URL + "user/repos?username="+username);
+			xhttp.open("GET", GITVIEW_URL + "user/repos?username="+username);
+			console.log(GITVIEW_URL + "user/repos?username="+username);
 			xhttp.send();
 
 		}
@@ -62,12 +75,43 @@
 			var repo = repositories[this.value];
 			document.querySelector("#repositorySelect").innerText = repo.name;
 			$('#repositoryList').slideUp();
+
+			if(!repositories[this.value].fileDirectory){
+				queryAdvancedData(repositories[this.value]);
+			}
+
 			document.querySelector("#n1").innerText = repo.name + "\n" + repo.description;
 			document.querySelector("#n5").innerText = "Language: " + repo.language + "\nLast Updated: " + repo.lastUpdated;
 		}
 
+		function queryAdvancedData(repo){
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function(){
+				if(this.readyState == 4 && this.status == 200){
+					console.dir(this.responseText);
+					var advancedData = JSON.parse(this.responseText);
+					repo.readme = advancedData.readme;
+					repo.fileDirectory = advancedData.fileDirectory;
+					repo.commitCount = advancedData.commitCount;
+					repo.contributionPercentage = advancedData.contributionPercentage;
+
+				}
+					
+			};
+			xhttp.open("GET", GITVIEW_URL + "repo?username="+currentUsername +"&reponame="+repo.name+"&owner=" +repo.owner);
+			xhttp.send();
+		}
+
 		function changeLayout(layout){
 
+		}
+
+		function previewNodeContextMenu(node,x,y){
+			console.log("clicked");
+			var dropdown = document.querySelector("#dropdown");
+			dropdown.style.left = x+"px";
+			dropdown.style.top = y+"px";
+			$('#dropdown').slideDown();
 		}
 		
 	
@@ -108,6 +152,6 @@
 	<div id="n5" class="previewNode"> </div>
 </div>
 
-<ul id="dropdown"></ul>
+<ul id="dropdown"><li> This is a dropdown </li></ul>
 </body>
 </html>

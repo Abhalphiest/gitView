@@ -65,7 +65,7 @@ http.createServer((request, response) => {
 
 	// --------------------------------------------------------------------------------
 	//
-	// The /repo path requests a specific repository, with owner, user, and reponame
+	// The /repo path requests a specific repository, with owner, username, and reponame
 	// querystring parameters. The returned JSON object contains a subset of the information
 	// available, namely:
 	// 		Name

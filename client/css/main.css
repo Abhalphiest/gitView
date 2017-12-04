@@ -1,6 +1,9 @@
+@import url('https://fonts.googleapis.com/css?family=Barlow+Condensed');
+
 body{
 	background-color: #111;
 	color: #EEE;
+	font-family: 'Barlow Condensed', sans-serif;
 }
 
 * {
@@ -25,6 +28,7 @@ body{
 	height:600px;
 	top:3%;
 	right: 15%;
+	border-radius:5px;
 }
 
 ul{
@@ -35,7 +39,7 @@ ul{
 }
 
 #layout{
-	width:140px;
+	width:130px;
 	height:600px;
 	position:absolute;
 	top: 3%;
@@ -46,6 +50,8 @@ ul{
 	height: 97%;
 	overflow-y:auto;
 	background-color: #111;
+	margin-right:2px;
+	padding-right:0px;
 }
 
 
@@ -56,10 +62,12 @@ ul{
 	color: black;
 	float:left;
 	margin:10px;
+	margin-right:2px;
 }
 
 #dropdown{
 	display:none;
+	position:absolute;
 }
 
 #repositoryControl{
@@ -136,4 +144,29 @@ ul{
 
 #n5{
 	height:10%;
+}
+
+
+/* Custom Scrollbars */
+
+/* width */
+::-webkit-scrollbar {
+    width: 7px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+    background: #f1f1f1; 
+    border-radius:5px;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+	border-radius:5px;
+    background: #888; 
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+    background: #555; 
 }
