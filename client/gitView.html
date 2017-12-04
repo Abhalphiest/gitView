@@ -4,11 +4,14 @@
 	<meta charset="utf-8" />
 	<title>Git Viewer</title>
 	<link rel="stylesheet" type="text/css" href="css/main.css">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 	<script>
 	(function(){
 		const GITVIEW_URL = 'https://git-viewer.herokuapp.com';
 		const GITVIEW_TEST_URL = "http://localhost:3000/";
 		window.onload = init;
+
+		var repositories = [];
 		
 		function init(){
 			// set up username search
@@ -16,34 +19,54 @@
 				queryUsername(this.value);
 			};
 
-			// also use enter key
+			document.querySelector('#repositorySelect').onclick = function(){
+				//if the repository list is populated, show it
+				if(repositories.length != 0){
+					$('#repositoryList').slideDown();
+				}
+			};
 
-			// also use submit button..?
+
 
 		}
 		
 		function queryUsername(username){
 			// get list of repositories
-			var repolist
 			console.log("querying username "+ username);
 			//populate repositories
-			var reposelect = document.querySelector("#repositories");
+			var reposelect = document.querySelector("#repositoryList");
 
 			var xhttp = new XMLHttpRequest();
 			xhttp.onreadystatechange = function(){
 				if(this.readyState == 4 && this.status == 200){
+					document.querySelector("#repositoryControl").style.opacity = 1.0; // make it visible if it was hidden
 					console.dir(this.responseText);
-					var repos = JSON.parse(this.responseText);
-					repos.forEach(function(repo){
+					repositories = JSON.parse(this.responseText);
+					for(let i = 0; i < repositories.length; i++){
 						var li = document.createElement('li');
-						li.innerText = repo;
+						li.innerText = repositories[i].name;
+						li.value = i;
+						li.onclick = selectRepository;
 						reposelect.appendChild(li);
-					});
+					}
 				}
 			};
 			xhttp.open("GET", GITVIEW_TEST_URL + "user/repos?username="+username);
 			console.log(GITVIEW_TEST_URL + "user/repos?username="+username);
 			xhttp.send();
+
+		}
+
+		// hard coded for now
+		function selectRepository(){
+			var repo = repositories[this.value];
+			document.querySelector("#repositorySelect").innerText = repo.name;
+			$('#repositoryList').slideUp();
+			document.querySelector("#n1").innerText = repo.name + "\n" + repo.description;
+			document.querySelector("#n5").innerText = "Language: " + repo.language + "\nLast Updated: " + repo.lastUpdated;
+		}
+
+		function changeLayout(layout){
 
 		}
 		
@@ -53,11 +76,19 @@
 </head>
 <body>
 
-<label for="username">GitHub Username: </label> <input type="text" id="username">
-<!-- Custom select -->
-<label for="repositories">Repository: </label> <ul id="repositories"> </ul>
-<label for="layout"> Layout: </label> 	<ul id="layout"> 
-											<li> 1 </li>
+<div>
+	<label for="username">GitHub Username: </label> <input type="text" id="username">
+	<!-- Custom select -->
+	<div id="repositoryControl">
+		<div id="repositorySelect">
+			<span id="currentRepo">Select a Repository</span>
+		</div>
+		<ul id="repositoryList"></ul>
+	</div>
+</div>
+<div id="layout">
+<label for="layout"> Layout: </label> 	<ul id="layoutList"> 
+											<li><img src="media/layout1.png" alt="layout 1"/></li>
 											<li> 2 </li>
 											<li> 3 </li>
 											<li> 4 </li>
@@ -67,8 +98,15 @@
 											<li> 8 </li>
 											<li> 9 </li>
 										</ul>
+</div>
 	
-<div id="preview"> </div>
+<div id="preview"> 
+	<div id="n1" class="previewNode"> </div>
+	<div id="n2" class="previewNode"> </div>
+	<div id="n3" class="previewNode"> </div>
+	<div id="n4" class="previewNode"> </div>
+	<div id="n5" class="previewNode"> </div>
+</div>
 
 <ul id="dropdown"></ul>
 </body>

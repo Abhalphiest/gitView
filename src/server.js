@@ -17,7 +17,9 @@ const https = require('https');
 const url = require('url');
 const query = require('querystring');
 const requestHandler = require('request');
+const circularJSON = require('circular-json');
 const port = process.env.PORT || process.env.NODE_PORT || 3000;
+
 
 const GITHUB_API_URL = "https://api.github.com";
 
@@ -79,14 +81,10 @@ http.createServer((request, response) => {
 	case '/repo': {  
 	  	console.log('finding repo');
 	  	var repoData = {
-	  		name: null,
-	  		description: null,
 	  		readme: null,
-	  		language: null,
 	  		commitCount: null,
 	  		contributionPercentage: null,
 	  		fileDirectory: null,
-	  		lastUpdated: null
 	  	};
 
 	  	// make sure this response object is always the same format
@@ -97,21 +95,18 @@ http.createServer((request, response) => {
 
 	  		let completed = true;
 	  		for(var property in repoData){
-	  			//console.log(property);
-	  			//console.log(repoData[property]);
 	  			if(repoData.hasOwnProperty(property) && repoData[property] == null)
 	  				completed = false;
 	  		}
 
 	  		if(completed){
-	  			response.write(JSON.stringify(repoData));
+	  			response.write(circularJSON.stringify(repoData));
 	  			response.end();
 	  		}
 	  	}
 
 	  	// self-documenting function names, split up this way because they
 	  	// require different API calls and modularity is for cool kids
-	  	requestRepoInformation(params.owner, params.reponame, setRepoData);
 	  	requestRepoAnalytics(params.owner, params.username, params.reponame, setRepoData);
 	  	requestRepoReadme(params.owner, params.reponame, setRepoData);
 	  	requestRepoFileDirectory(params.owner, params.reponame, setRepoData);
@@ -156,23 +151,31 @@ console.log("Listening on localhost:"+ port);
 //
 // Name: requestUserRepos
 // 
-// Description: gets only the names of all repos that the user has contributed to,
-// 				sorted in order of last-updated
-//
+// Description: gets basic information for all the repos a user has contributed to
+//				(this information is on a single call to minimize API calls. githubAPI has a strict rate limit)
+//				The array in the response contains name, description, language, last updated, and owner for each repo
 // Params: 	username: 	the github username of the user, as a string
 // 			response: 	the response object for this server query
 //
 // ---------------------------------------------------------------------------------
 
-function requestUserRepos(owner, response){
+function requestUserRepos(username, response){
+
+	function Repository(repoObj){
+		this.name = repoObj.name;
+		this.description = repoObj.description;
+		this.language = repoObj.language;
+		this.lastUpdated = repoObj.updated_at;
+		this.owner = repoObj.owner.login;
+	};
 	
 	var callback = function(error, res, body){	
-		var repos = JSON.parse(body);
-		var names = [];
-		repos.forEach(function(repo){
-			names.push(repo.name);
+		var repoObjs = JSON.parse(body);
+		var repos = [];
+		repoObjs.forEach(function(repo){
+			repos.push(new Repository(repo));
 		});
-		response.write(JSON.stringify(names));
+		response.write(JSON.stringify(repos));
 		response.end();
 	};
 	sendGithubRequest("/users/" + username + "/repos?type=all&sort=updated", callback);
@@ -212,38 +215,6 @@ function requestRepoFile(username, repo, path, response){
 	sendGithubRequest("/repos/" + owner + "/" + repo + "/contents/"+path, callback);
 }
 
-
-// --------------------------------------------------------------------------------
-//
-// Name: requestRepoInformation
-// 
-// Description: gets the plaintext file at the given path
-//
-// Params: 	owner: 		the github username of the owner of the repository as a string
-//			reponame: 	the name of the repository as a string
-//			repodata: 	the server call response object, this function populates the
-//						following fields: 
-//											name
-//											description
-//											language
-//											lastUpdated
-//
-// ---------------------------------------------------------------------------------
-
-function requestRepoInformation(owner, reponame, repoData){
-
-	var callback = function(error, res, body){	
-		// set up a request for the actual file
-		var repo = JSON.parse(body);
-		repoData('name', repo.name);
-		repoData('lastUpdated', repo.updated_at);
-		repoData('description', repo.description);
-		repoData('language', repo.language)
-	};
-
-	sendGithubRequest("/repos/" + owner + "/" + reponame, callback);
-
-}
 
 // --------------------------------------------------------------------------------
 //

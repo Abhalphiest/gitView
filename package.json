@@ -23,6 +23,7 @@
   "homepage": "https://github.com/Abhalphiest/gitView#readme",
   "dependencies": {
     "bluebird": "^3.5.1",
+    "circular-json": "^0.4.0",
     "github": "^12.1.0",
     "request": "^2.83.0"
   }
