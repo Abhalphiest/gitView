@@ -6,15 +6,17 @@
 	<link rel="stylesheet" type="text/css" href="css/main.css">
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 	<script src="js/fileExplorer.js"></script>
+	<script src="js/previewNode.js"></script>
 	<script src="test.js"></script>
 	<script>
-	(function(){
+	var getCurrentRepo = (function(){
 		const GITVIEW_URL = 'https://git-viewer.herokuapp.com/';
 		const GITVIEW_TEST_URL = "http://localhost:3000/";
 		window.onload = init;
 
 		var repositories = [];
 		var currentUsername = "";
+		var currentRepo = undefined;
 		
 		function init(){
 			// set up username search
@@ -43,6 +45,7 @@
 			};
 
 			fileExplorer.initialize();
+			previewNodeManager.initialize();
 
 			fileExplorer.reset(testDir.fileDirectory);
 
@@ -80,6 +83,7 @@
 		// hard coded for now
 		function selectRepository(){
 			var repo = repositories[this.value];
+			currentRepo = repo;
 			document.querySelector("#repositorySelect").innerText = repo.name;
 			$('#repositoryList').slideUp();
 
@@ -112,10 +116,6 @@
 			xhttp.send();
 		}
 
-		function changeLayout(layout){
-
-		}
-
 		function previewNodeContextMenu(node,x,y){
 			console.log("clicked");
 			var dropdown = document.querySelector("#dropdown");
@@ -124,16 +124,9 @@
 			$('#dropdown').slideDown();
 			dropdown.value = node.id;
 		}
-
-		function fillNode(){
-
-		};
-		function editNode(){
-
-		};
 		
-	
-	}())
+		return function getCurrentRepo(){return currentRepo};
+	}());
 	</script>
 </head>
 <body>
@@ -191,14 +184,14 @@
 
 <!-- Hidden elements (shown contextually) -->
 <ul id="dropdown">
-	<li id="titleFill" onclick="fillNode();">Title</li>
-	<li id="titleDescripFill" onclick="fillNode();">Title &amp; Description</li>
-	<li id="fileFill" onclick="fillNode();">File</li>
-	<li id="fileListFill" onclick="fillNode();">File List</li>
-	<li id="readmeFill" onclick="fillNode();">Readme</li>
-	<li id="contributionsFill" onclick="fillNode();">Contributions</li>
-	<li id="imageFill" onclick="fillNode();">Image</li>
-	<li id="editNode" onclick="editNode();">Edit</li>
+	<li id="titleFill">Title</li>
+	<li id="titleDescripFill">Title &amp; Description</li>
+	<li id="fileFill" >File</li>
+	<li id="fileListFill" >File List</li>
+	<li id="readmeFill" >Readme</li>
+	<li id="contributionsFill" >Contributions</li>
+	<li id="imageFill" >Image</li>
+	<li id="editNode">Edit</li>
 </ul>
 
 <div id="overlay"> </div>

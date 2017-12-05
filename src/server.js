@@ -1,48 +1,61 @@
 "use strict"
 
-
-
-
 // ----------------------------------------------------
 //
 // server.js contains the core of the git-viewer server
+// using express and also workaholism
 //
 // ----------------------------------------------------
 
 
-// imports, constant declarations, and response header
+//------------------------------------
+//
+// IMPORTS, DECLARATIONS, VARIOUS TOMFOOLERY
+//
+//-------------------------------------
 
-const http = require('http');
-const https = require('https');
-const express = require('express');
-const url = require('url');
-const query = require('querystring');
-const requestHandler = require('request');
-const env = require('node-env-file');
-const githubStrategy = require('passport-github');
+const express = require('express');					// main server framework
+const url = require('url');							// url parsing
+const query = require('querystring');				// query string parsing
+const requestHandler = require('request');			// http/https requests
+const env = require('node-env-file');				// local environment variables
+const githubStrategy = require('passport-github').Strategy;	// oauth2
 const passport = require('passport');
+
 const port = process.env.PORT || process.env.NODE_PORT || 3000;
-
-
 const GITHUB_API_URL = "https://api.github.com";
 
 
-const responseHeaders = {  
-    "access-control-allow-origin": "*",
-    "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
-    "access-control-allow-headers": "Content-Type, accept",
-    "access-control-max-age": 10,
-    "Content-Type": "application/json"
-};
+//------------------------------------
+//
+// OAUTH2 SETUP
+//
+//-------------------------------------
 
-  // if environment variables are not defined, grab them locally
-  env(".env");
 
-  // get our environmental variables for authentication
-  const GITHUB_CLIENT_ID = process.env['GITHUB_CLIENT_ID'];
-  const GITHUB_CLIENT_SECRET = process.env['GITHUB_CLIENT_SECRET'];
-  const GITHUB_PERSONAL_TOKEN = process.env['GITHUB_PERSONAL_TOKEN']
+// My .env file does NOT exist in the git repository or in any public place.
+// It contains the client ID, client secret, and personal token for the Github API.
+// To create your own (and use this server locally), generate your own private strings at
+// https://github.com/settings/developers
+// and then make a .env file in the root directory of the repo (same directory as package.json) with the following contents:
+//
+// GITHUB_CLIENT_ID=[YOUR_ID_HERE]
+// GITHUB_CLIENT_SECRET=[YOUR_SECRET_HERE]
+// GITHUB_PERSONAL_TOKEN=[YOUR_TOKEN_HERE]
+//
+// do not use [] in your file. The personal token may or may not be used. 
+//
 
+// if environment variables are not defined, grab them locally
+env(".env");
+
+// get our environmental variables for authentication
+const GITHUB_CLIENT_ID = process.env['GITHUB_CLIENT_ID'];
+const GITHUB_CLIENT_SECRET = process.env['GITHUB_CLIENT_SECRET'];
+const GITHUB_PERSONAL_TOKEN = process.env['GITHUB_PERSONAL_TOKEN'];
+
+
+// set up oauth2 authentication using passport and the github strategy
 passport.use(new githubStrategy({
   	clientID: GITHUB_CLIENT_ID,
   	clientSecret: GITHUB_CLIENT_SECRET,
@@ -55,7 +68,8 @@ passport.use(new githubStrategy({
 	}
 ));
 
-
+// we don't have an elegant way to do this (would need a db or something, probably)
+// so we just serialize and deserialize the whole user. Deal with it.
 
 passport.serializeUser(function(user, cb) {
   cb(null, user);
@@ -68,16 +82,18 @@ passport.deserializeUser(function(obj, cb) {
 
 //------------------------------------
 //
-// SERVER ENTRY POINT
+// SERVER CODE
 //
 //-------------------------------------
 
 var app = express();
 
+
+// use passport on all requests
 app.use(passport.initialize());
 app.use(passport.session());
 
-// CORS
+// CORS access for all requests
 app.use(function(req, res, next) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
@@ -85,14 +101,23 @@ app.use(function(req, res, next) {
   next();
 });
 
+
+// you won't get an error with no path at the moment, but you won't get any content, either
 app.get('/',
 	function(req,res){
 		res.end();
 });
 
-app.get('auth/github', passport.authenticate('github'));
+//--------------------------------------------------------------------------------
+//
+// The /auth/github and /auth/github/callback paths are for authorization purposes,
+// and don't really have much to do with the server behavior as a whole. Users shouldn't
+// be calling these, and they won't have a great time if they do.
+//
+// ---------------------------------------------------------------------------------
+app.get('/auth/github', passport.authenticate('github'));
 
-app.get('auth/github/callback', 
+app.get('/auth/github/callback', 
 		passport.authenticate('github', {failureRedirect: '/login'}),
 		function(req,res){res.redirect('/')
 	});
@@ -102,14 +127,10 @@ app.get('auth/github/callback',
 // The /repo path requests a specific repository, with owner, username, and reponame
 // querystring parameters. The returned JSON object contains a subset of the information
 // available, namely:
-// 		Name
-//		Description
 //		ReadMe
-//		Language
 //		Number of Commits made by User
 //		Percentage of Total Contribution (additions + deletions vs total)
-//		File Directory Tree
-//		Last Updated Date
+//		File Directory Tree (variety of information, including directory structure, download links, etc)
 //
 // ---------------------------------------------------------------------------------
 app.get('/repo', //require('connect-ensure-login').ensureLoggedIn(),
@@ -153,15 +174,15 @@ function(request, response){
 
 // --------------------------------------------------------------------------------
 //
-// The /repo/file path returns a specific file from a repository, with owner, path, and reponame
-// querystring parameters. The returned JSON object contains the file as a single plaintext string.
+// The /repo/file path returns a specific file from a repository, with a downloadUrl
+// querystring parameter. The returned JSON object contains the file as a single plaintext string.
 //
 // ---------------------------------------------------------------------------------
 app.get('/repo/file', function(request, response){
 	// parse the request into a path and usable parameters
   	let parsedUrl = url.parse(request.url);
   	let params = query.parse(parsedUrl.query);
-	requestRepoFile(params.owner, params.path, params.repo);
+	requestRepoFile(params.downloadUrl, response);
 
 });
 
@@ -231,30 +252,23 @@ function requestUserRepos(username, response){
 // 
 // Description: gets the plaintext file at the given path
 //
-// Params: 	owner: 		the github username of the owner of the repository as a string
-//			repo: 		the name of the repository as a string
-//			path:  		the path to the file from the root directory of the repository 
-// 			response: 	the response object for this server query
+// Params:  downloadUrl: 	the download_url from github that we got when we built the directory tree
+// 			response: 		the response object for this server query
 //
 // ---------------------------------------------------------------------------------
 
-function requestRepoFile(username, repo, path, response){
+function requestRepoFile(downloadUrl, response){
 
-	var callbackPrime = function(error, res, body){
+	var callback = function(error, res, body){
 		console.dir(body);
 		response.write(body);
 		response.end();
 	};
 
-	var callback = function(error, res, body){	
-		// set up a request for the actual file
-		var fileURL = JSON.parse(body).download_url;
-		var requestOptions = {
-			url:fileURL,
-		};
-		requestHandler(requestOptions, callbackPrime);
+	var requestOptions = {
+		url:downloadUrl,
 	};
-	sendGithubRequest("/repos/" + owner + "/" + repo + "/contents/"+path, callback);
+	requestHandler(requestOptions, callback);	
 }
 
 
@@ -350,7 +364,10 @@ function requestRepoReadme(owner, reponame, repoData){
 //
 // Name: requestRepoFileDirectory
 // 
-// Description: Builds the file directory for the github repo as a tree of sorts
+// Description: Builds the file directory for the github repo as a tree of sorts. Also includes
+//				some extra information about each file (including a raw download link) to minimize
+//				API calls per repo. Because this function builds the tree recursively, the number of API calls made
+//				depends on the complexity of the repository file system.
 //
 // Params: 	owner: 		the github username of the owner of the repository as a string
 //			reponame: 	the name of the repository as a string
@@ -363,6 +380,8 @@ function requestRepoReadme(owner, reponame, repoData){
 function requestRepoFileDirectory(owner, reponame, repoData){
 
 	// this.. is about to suck.
+	// Note: this worked perfectly the first time I tested it and I felt cheated out
+	// of the frustration I expected
 
 	// need a closure for this hacky semaphore
 	var sem = function(){
@@ -381,13 +400,18 @@ function requestRepoFileDirectory(owner, reponame, repoData){
 		return obj;
 	}();
 
-	function TreeNode(type, name, path){
+	// this constructor is a great reference for how the tree is structured
+	// so I won't bother sketching out the object layout in a block comment
+	function TreeNode(type, name, path, download){
 		this.type = type;		// dir or file
 		this.children = []; 	// only relevant for directories
 		this.name = name;
 		this.path = path;
+		this.download = download; // to minimize API calls
 	}
 
+	// this is the root node, you can look at it as the root directory
+	// of the project - it isn't a named directory, but it contains the first level.
 	var directoryTree = new TreeNode("dir", reponame, "/");
 
 	// kind of a recursive thing going on here..
@@ -396,16 +420,20 @@ function requestRepoFileDirectory(owner, reponame, repoData){
 		var arr = JSON.parse(body);
 		console.log(arr);
 		arr.forEach(function(item){
-			var newNode = new TreeNode(item.type, item.name, item.path);
+			var newNode = new TreeNode(item.type, item.name, item.path, item.download_url);
 			this.children.push(newNode);
 			if(item.type == "dir"){ 	// god, please forgive me for my trespasses, as I forgive those who tresspass against me
 				sem.openRequest();
 				sendGithubRequest("/repos/" + owner + "/" + reponame + "/contents/"+item.path, callback.bind(newNode));
 			}
 		}.bind(this)); // this is the parent node of this call, because of the .bind on callback
-		sem.closeRequest();
+
+		// it is important to decrement the semaphore AFTER the call goes out, so that we never hit 0 outstanding requests
+		// in between closing and opening, when we aren't actually done yet.
+		sem.closeRequest(); 
 	};
 
+	// the journey of 1000 [INSERT PREFERRED UNIT OF LENGTH HERE // default: cubits] begins with a sinpgle recursive call... - surprisingly tech savvy Confucius
 	sem.openRequest();
 	sendGithubRequest("/repos/" + owner + "/" + reponame + "/contents", callback.bind(directoryTree));
 }
@@ -432,6 +460,20 @@ function sendGithubRequest(path, callback){
 
 	requestHandler(requestOptions, callback);
 }
+
+// --------------------------------------------------------------------------------
+//
+// Name: checkRateLimit
+// 
+// Description: Sometimes githubAPI just needs space. It still loves us, but it can't just
+//				like.. /only/ love us.. you know? It needs to live its own life, unencumbered
+//				by our needs and requests. [ 60 calls/hr unauthenticated, 5000 calls/hr authenticated]
+//
+//				We throw an error if we've hit the rate limit, and a slightly differently flavored
+//				error otherwise (I'm a big fan of the salted caramel server error, myself...)
+//
+//
+// ---------------------------------------------------------------------------------
 
 function checkRateLimit(){
 
