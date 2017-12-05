@@ -120,7 +120,15 @@ ul{
 	display:none;
 }
 #codeGenerator{
-	display:none;
+	position:absolute;
+	top: 10%;
+	left: 5%;
+}
+
+.codeDisplay{
+	width: 250px;
+	height: 150px;
+	background-color:#EEE;
 }
 
 #fileExplorer{
