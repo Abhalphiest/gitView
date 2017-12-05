@@ -10,6 +10,7 @@ var fileExplorer = function(){
 	var obj = {};
 	var fileTree = undefined;
 	var rootDir = undefined;
+	var fileExplorerElem = undefined;
 	var dirStack = [];
 
 	const DIR_ICON = "media/directoryicon.png";
@@ -19,16 +20,19 @@ var fileExplorer = function(){
 
 	obj.initialize = function(){
 		rootDir = document.querySelector("#rootDir");
+		fileExplorerElem = document.querySelector("#fileExplorer")
 	};
 
 	obj.reset = function(fileDirectory){
+		console.dir(fileDirectory);
 		fileTree = fileDirectory;
 		rootDir.innerHTML = "";
-		for(let i = 0; i < dirStack.length - 1; i++){ // leave the first (root) level
+		for(let i = 0; i < dirStack.length; i++){ // clear the stack
 			var level = dirStack.pop();
 			level.remove(); //removes from DOM
 		}
 		populateDirectory(fileTree.children,rootDir);
+
 
 	};
 
@@ -36,15 +40,15 @@ var fileExplorer = function(){
 		var div = document.createElement('div');
 		div.classList.add('directoryDiv');
 		div.style.display = "none";
-		populateDirectory(directory.children, div);
 		dirStack.push(div);
+		populateDirectory(directory.children, div);
 		addDirectoryTransition(div);
 
 	};
 
 	obj.up = function(){
 		var level = dirStack.pop();
-		hideDirectoryAnimation(level);
+		hideDirectoryTransition(level);
 		level.remove();
 	};
 
@@ -52,16 +56,17 @@ var fileExplorer = function(){
 
 		var ul = document.createElement('ul');
 		children.forEach(function(item){
-			let li = document.createElement('li');
-			let icon = document.createElement('img');
-			let span = document.createElement('span');
+			var li = document.createElement('li');
+			var icon = document.createElement('img');
+			var span = document.createElement('span');
 
-			icon.width = "50px";
-			icon.height = "50px"
+			icon.width = 30;
+			icon.height = 30;
 
 			if(item.type == "dir"){
 				icon.src = DIR_ICON;
-				li.onClick = function(){
+				li.onclick = function(){
+					console.log('clicked');
 					obj.down(item);
 				}
 			}
@@ -71,26 +76,36 @@ var fileExplorer = function(){
 			else{ //shouldn't ever happen, but.. life finds a way
 				icon.src=UNKNOWN_ICON;
 			}
+			span.innerText = item.name;
+			li.appendChild(icon);
+			li.appendChild(span);
+			ul.appendChild(li);
 		});
 		directory.appendChild(ul);
-
-		// for navigating upwards
-		var backButton = document.createElement("img");
-		backButton.classList.add("directoryUpButton");
-		backButton.src = BACK_ICON;
-		backButton.onclick = function(){
-			obj.up();
-		};
-		directory.appendChild(backButton);
+		console.log(dirStack.length);
+		if(dirStack.length > 0){
+			// for navigating upwards
+			var backButton = document.createElement("img");
+			backButton.classList.add("directoryUpButton");
+			backButton.src = BACK_ICON;
+			backButton.width=20;
+			backButton.height = 20;
+			backButton.onclick = function(){
+				obj.up();
+			};
+			directory.appendChild(backButton);
+		}
 		
 	}
 
 	function addDirectoryTransition(domDirectory){
+		fileExplorerElem.appendChild(domDirectory);
 
+		$(domDirectory).show();
 	}
 
 	function hideDirectoryTransition(domDirectory){
-
+		$(domDirectory).hide();
 	}
 
 	return obj;

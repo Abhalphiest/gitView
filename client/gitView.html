@@ -6,6 +6,7 @@
 	<link rel="stylesheet" type="text/css" href="css/main.css">
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 	<script src="js/fileExplorer.js"></script>
+	<script src="test.js"></script>
 	<script>
 	(function(){
 		const GITVIEW_URL = 'https://git-viewer.herokuapp.com/';
@@ -42,6 +43,10 @@
 			};
 
 			fileExplorer.initialize();
+
+			fileExplorer.reset(testDir.fileDirectory);
+
+			
 
 		}
 		
@@ -81,8 +86,10 @@
 			if(!repositories[this.value].fileDirectory){
 				queryAdvancedData(repositories[this.value]);
 			}
+			else{
+				fileExplorer.reset(repo.fileDirectory);
+			}
 
-			fileExplorer.reset(repo.fileDirectory);
 			document.querySelector("#n1").innerText = repo.name + "\n" + repo.description;
 			document.querySelector("#n5").innerText = "Language: " + repo.language + "\nLast Updated: " + repo.lastUpdated;
 		}
@@ -97,6 +104,7 @@
 					repo.fileDirectory = advancedData.fileDirectory;
 					repo.commitCount = advancedData.commitCount;
 					repo.contributionPercentage = advancedData.contributionPercentage;
+					fileExplorer.reset(repo.fileDirectory);
 				}
 					
 			};

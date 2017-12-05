@@ -77,9 +77,16 @@ var app = express();
 app.use(passport.initialize());
 app.use(passport.session());
 
+// CORS
+app.use(function(req, res, next) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
+  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type, Authorization');
+  next();
+});
+
 app.get('/',
 	function(req,res){
-		res.writeHead(200, responseHeaders);
 		res.end();
 });
 
@@ -105,7 +112,8 @@ app.get('auth/github/callback',
 //		Last Updated Date
 //
 // ---------------------------------------------------------------------------------
-app.get('/repo', function(request, response){
+app.get('/repo', //require('connect-ensure-login').ensureLoggedIn(),
+function(request, response){
 	// parse the request into a path and usable parameters
   	let parsedUrl = url.parse(request.url);
   	let params = query.parse(parsedUrl.query);
@@ -131,7 +139,6 @@ app.get('/repo', function(request, response){
 
   		if(completed){
   			response.write(JSON.stringify(repoData));
-  			response.writeHead(200, responseHeaders);
   			response.end();
   		}
   	}
@@ -172,11 +179,6 @@ app.get('/user/repos', function(request, response){
 	requestUserRepos(params.username,response);
 });
 
-
-// default functionality
-app.use(function(req, res){
-   res.sendStatus(404);
-});
   
 
 app.listen(port);
@@ -208,12 +210,14 @@ function requestUserRepos(username, response){
 	
 	var callback = function(error, res, body){	
 		var repoObjs = JSON.parse(body);
+		if(!Array.isArray(repoObjs)){  // we have likely hit our rate limit
+			checkRateLimit();
+		}
 		var repos = [];
 		repoObjs.forEach(function(repo){
 			repos.push(new Repository(repo));
 		});
 		response.write(JSON.stringify(repos));
-		response.writeHead(200, responseHeaders);
 		response.end();
 	};
 	sendGithubRequest("/users/" + username + "/repos?type=all&sort=updated", callback);
@@ -239,7 +243,6 @@ function requestRepoFile(username, repo, path, response){
 	var callbackPrime = function(error, res, body){
 		console.dir(body);
 		response.write(body);
-		response.writeHead(200, responseHeaders);
 		response.end();
 	};
 
@@ -428,4 +431,12 @@ function sendGithubRequest(path, callback){
 	};
 
 	requestHandler(requestOptions, callback);
+}
+
+function checkRateLimit(){
+
+	var callback = function(error, res, body){
+		console.dir(body);
+	};
+	sendGithubRequest('rateLimit', callback);
 }

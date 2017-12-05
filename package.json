@@ -24,6 +24,7 @@
   "dependencies": {
     "bluebird": "^3.5.1",
     "circular-json": "^0.4.0",
+    "connect-ensure-login": "^0.1.1",
     "express": "^4.16.2",
     "github": "^12.1.0",
     "login-with": "^1.2.0",

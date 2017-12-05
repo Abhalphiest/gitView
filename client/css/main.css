@@ -123,8 +123,36 @@ ul{
 	display:none;
 }
 
+#fileExplorer{
+	position:absolute;
+	top: 10%;
+	left: 27%;
+
+}
+
 .directoryDiv{
-	
+	width: 225px;
+	height: 500px;
+	position:absolute;
+
+}
+
+.directoryDiv ul li span{
+	vertical-align: 50%;
+	margin-left: 10px
+}
+
+.directoryDiv ul{
+	height:100%;
+	width: 100%;
+	border-radius: 5px;
+	padding:10px;
+}
+
+.directoryUpButton{
+	position:absolute;
+	top:3px;
+	right:3px;
 }
 
 
