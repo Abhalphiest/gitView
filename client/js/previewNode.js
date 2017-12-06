@@ -17,8 +17,14 @@ var previewNodeManager = function(){
 
 		var dropdownOptions = dropdown.querySelectorAll('li');
 		dropdownOptions.forEach(function(option){
-			option.onclick = obj.setNode;
+			option.onclick = function(){
+				obj.setNode(this.id, nodes[dropdown.value.substr(1) - 1]);
+			};
 		});
+	};
+
+	obj.reset = function(){
+		this.setNode("titleDescripFill", nodes[0]);
 	};
 
 	obj.changeLayout = function(){
@@ -31,9 +37,7 @@ var previewNodeManager = function(){
 
 	};
 
-	obj.setNode= function(){
-		var type = this.id;
-		var node = nodes[dropdown.value.substr(1) - 1];
+	obj.setNode= function(type, node){
 		var repository = getCurrentRepo();
 		switch(type){
 			case "titleFill":{

@@ -64,7 +64,7 @@
 				if(this.readyState == 4 && this.status == 200){
 					currentUsername = username;
 					document.querySelector("#repositoryControl").style.opacity = 1.0; // make it visible if it was hidden
-					console.dir(this.responseText);
+					reposelect.innerHTML = "";
 					repositories = JSON.parse(this.responseText);
 					for(let i = 0; i < repositories.length; i++){
 						var li = document.createElement('li');
@@ -80,7 +80,6 @@
 
 		}
 
-		// hard coded for now
 		function selectRepository(){
 			var repo = repositories[this.value];
 			currentRepo = repo;
@@ -94,8 +93,7 @@
 				fileExplorer.reset(repo.fileDirectory);
 			}
 
-			document.querySelector("#n1").innerText = repo.name + "\n" + repo.description;
-			document.querySelector("#n5").innerText = "Language: " + repo.language + "\nLast Updated: " + repo.lastUpdated;
+			previewNodeManager.reset();
 		}
 
 		function queryAdvancedData(repo){
