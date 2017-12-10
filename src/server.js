@@ -88,6 +88,9 @@ passport.deserializeUser(function(obj, cb) {
 
 var app = express();
 
+// session management
+app.use(require('express-session')({ secret: 'keyboard cat', resave: true, saveUninitialized: true }));
+
 
 // use passport on all requests
 app.use(passport.initialize());
@@ -166,9 +169,13 @@ function(request, response){
 
   	// self-documenting function names, split up this way because they
   	// require different API calls and modularity is for cool kids
-  	requestRepoAnalytics(params.owner, params.username, params.reponame, setRepoData, response);
-  	requestRepoReadme(params.owner, params.reponame, setRepoData, response);
-  	requestRepoFileDirectory(params.owner, params.reponame, setRepoData, response);
+  	try{
+  		requestRepoAnalytics(params.owner, params.username, params.reponame, setRepoData);
+  		requestRepoReadme(params.owner, params.reponame, setRepoData);
+  		requestRepoFileDirectory(params.owner, params.reponame, setRepoData);
+  	}catch(err){
+  		checkRateLimit(response);
+  	}
 
 });
 
@@ -197,7 +204,12 @@ app.get('/user/repos', function(request, response){
 	// parse the request into a path and usable parameters
   	let parsedUrl = url.parse(request.url);
   	let params = query.parse(parsedUrl.query);
+  	try{
 	requestUserRepos(params.username,response);
+	}catch(err){
+  		checkRateLimit(response);
+  	}			     
+
 });
 
   
@@ -205,7 +217,7 @@ app.get('/user/repos', function(request, response){
 app.listen(port);
 
 
-console.log("Listening on localhost:"+ port);
+console.log("Listening on localhost:" + port);
 
 // --------------------------------------------------------------------------------
 //
@@ -231,15 +243,14 @@ function requestUserRepos(username, response){
 	
 	var callback = function(error, res, body){	
 		var repoObjs = JSON.parse(body);
-		if(!Array.isArray(repoObjs)){  // we have likely hit our rate limit
-			console.log('user repo request');
-			checkRateLimit(response);
-			return;
-		}
 		var repos = [];
-		repoObjs.forEach(function(repo){
-			repos.push(new Repository(repo));
-		});
+		try{
+			repoObjs.forEach(function(repo){
+				repos.push(new Repository(repo));
+			});
+		}catch(err){
+			throw err;
+		}
 		response.write(JSON.stringify(repos));
 		response.end();
 	};
@@ -289,11 +300,10 @@ function requestRepoFile(downloadUrl, response){
 //						following fields: 
 //											commitCount
 //											contributionPercentage
-// 			response: 		the response object for this server query
 //
 // ---------------------------------------------------------------------------------
 
-function requestRepoAnalytics(owner, username, reponame, repoData, response){
+function requestRepoAnalytics(owner, username, reponame, repoData){
 
 	var callback = function(error, res, body){	
 		var contributorsArray = JSON.parse(body);
@@ -301,28 +311,27 @@ function requestRepoAnalytics(owner, username, reponame, repoData, response){
 		var commitCount = 0;
 		var additionsDeletions = 0;
 
-		if(!Array.isArray(contributorsArray)){  // we have likely hit our rate limit
-			console.log('repo analytics');
-			checkRateLimit(response);
-			return;
-		}
+		console.dir(contributorsArray);
+		try{
+			contributorsArray.forEach(function(contributor){
 
-		contributorsArray.forEach(function(contributor){
+				var contributorAdditionsDeletions = 0;
 
-			var contributorAdditionsDeletions = 0;
+				contributor.weeks.forEach(function(week){
+					contributorAdditionsDeletions += week.a;
+					contributorAdditionsDeletions += week.d;
+				});
 
-			contributor.weeks.forEach(function(week){
-				contributorAdditionsDeletions += week.a;
-				contributorAdditionsDeletions += week.d;
+				if(contributor.author.login == username){
+					commitCount = contributor.total;
+					additionsDeletions = contributorAdditionsDeletions;
+				}
+
+				totalAdditionsDeletions += contributorAdditionsDeletions;
 			});
-
-			if(contributor.author.login == username){
-				commitCount = contributor.total;
-				additionsDeletions = contributorAdditionsDeletions;
-			}
-
-			totalAdditionsDeletions += contributorAdditionsDeletions;
-		});
+		}catch(error){
+			throw error;
+		}
 
 		repoData('commitCount',commitCount);
 		if(totalAdditionsDeletions != 0)
@@ -333,6 +342,7 @@ function requestRepoAnalytics(owner, username, reponame, repoData, response){
 	};
 
 	sendGithubRequest("/repos/" + owner + "/" + reponame + "/stats/contributors", callback);
+	console.log("/repos/" + owner + "/" + reponame + "/stats/contributors");
 }
 
 
@@ -347,11 +357,10 @@ function requestRepoAnalytics(owner, username, reponame, repoData, response){
 //			repodata: 	the server call response object, this function populates the
 //						following fields: 
 //											readme
-// 			response: 		the response object for this server query
 //
 // ---------------------------------------------------------------------------------
 
-function requestRepoReadme(owner, reponame, repoData, response){
+function requestRepoReadme(owner, reponame, repoData){
 
 	var callbackPrime = function(error, res, body){
 		repoData('readme', body);
@@ -359,6 +368,9 @@ function requestRepoReadme(owner, reponame, repoData, response){
 	var callback = function(error, res, body){	
 		// set up a request for the actual file
 		var fileURL = JSON.parse(body).download_url;
+		if(!fileURL){
+			throw error;
+		}
 		var requestOptions = {
 			url:fileURL,
 		};
@@ -381,12 +393,11 @@ function requestRepoReadme(owner, reponame, repoData, response){
 //			repodata: 	the server call response object, this function populates the
 //						following fields: 
 //											fileDirectory
-// 			response: 		the response object for this server query
 //
 //
 // ---------------------------------------------------------------------------------
 
-function requestRepoFileDirectory(owner, reponame, repoData, response){
+function requestRepoFileDirectory(owner, reponame, repoData){
 
 	// this.. is about to suck.
 	// Note: this worked perfectly the first time I tested it and I felt cheated out
@@ -427,20 +438,19 @@ function requestRepoFileDirectory(owner, reponame, repoData, response){
 	// because what I needed today was asynchronous recursion.
 	var callback = function(error, res, body){
 		var arr = JSON.parse(body);
-		if(!Array.isArray(arr)){  // we have likely hit our rate limit
-			console.log('treebuild');
-			checkRateLimit(response);
-			return;
+	
+		try{
+			arr.forEach(function(item){
+				var newNode = new TreeNode(item.type, item.name, item.path, item.download_url);
+				this.children.push(newNode);
+				if(item.type == "dir"){ 	// god, please forgive me for my trespasses, as I forgive those who tresspass against me
+					sem.openRequest();
+					sendGithubRequest("/repos/" + owner + "/" + reponame + "/contents/"+item.path, callback.bind(newNode));
+				}
+			}.bind(this)); // this is the parent node of this call, because of the .bind on callback
+		}catch(err){
+			throw err;
 		}
-		arr.forEach(function(item){
-			var newNode = new TreeNode(item.type, item.name, item.path, item.download_url);
-			this.children.push(newNode);
-			if(item.type == "dir"){ 	// god, please forgive me for my trespasses, as I forgive those who tresspass against me
-				sem.openRequest();
-				sendGithubRequest("/repos/" + owner + "/" + reponame + "/contents/"+item.path, callback.bind(newNode));
-			}
-		}.bind(this)); // this is the parent node of this call, because of the .bind on callback
-
 		// it is important to decrement the semaphore AFTER the call goes out, so that we never hit 0 outstanding requests
 		// in between closing and opening, when we aren't actually done yet.
 		sem.closeRequest(); 

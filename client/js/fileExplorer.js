@@ -52,13 +52,17 @@ var fileExplorer = function(){
 		level.remove();
 	};
 
+	obj.showFile = function(name, download){
+		console.log("showing file " + download);
+	}
+
 	function populateDirectory(children, directory){
 
 		var ul = document.createElement('ul');
 		children.forEach(function(item){
 			var li = document.createElement('li');
 			var icon = document.createElement('img');
-			var span = document.createElement('span');
+			var a = document.createElement('a');
 
 			icon.width = 30;
 			icon.height = 30;
@@ -76,9 +80,20 @@ var fileExplorer = function(){
 			else{ //shouldn't ever happen, but.. life finds a way
 				icon.src=UNKNOWN_ICON;
 			}
-			span.innerText = item.name;
+			a.innerText = item.name;
+			a.href = item.download;
+			a.onclick = function(e){
+				e.preventDefault(); // do not redirect for <a> tag
+				obj.showFile(item.name, item.download);
+			}
 			li.appendChild(icon);
-			li.appendChild(span);
+			li.appendChild(a);
+			li.draggable = true;
+			li.ondragstart = function(e){
+				e.dataTransfer.setData("name", item.name);
+				e.dataTransfer.setData("download", item.download);
+			};
+
 			ul.appendChild(li);
 		});
 		directory.appendChild(ul);

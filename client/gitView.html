@@ -88,6 +88,15 @@
 
 			if(!repositories[this.value].fileDirectory){
 				queryAdvancedData(repositories[this.value]);
+
+				// for testing without the rate limit
+
+				// repositories[this.value].fileDirectory = testDir.fileDirectory;
+				// repositories[this.value].readme = testDir.readme;
+				// repositories[this.value].commitCount = testDir.commitCount;
+				// repositories[this.value].contributionPercentage = testDir.contributionPercentage;
+				// fileExplorer.reset(repositories[this.value].fileDirectory);
+
 			}
 			else{
 				fileExplorer.reset(repo.fileDirectory);
@@ -147,14 +156,14 @@
 <section id="layout">
 <label for="layout"> Layout: </label> 	<ul id="layoutList"> 
 											<li><img src="media/layout1.png" alt="layout 1"/></li>
-											<li> 2 </li>
-											<li> 3 </li>
-											<li> 4 </li>
-											<li> 5 </li>
-											<li> 6 </li>
-											<li> 7 </li>
-											<li> 8 </li>
-											<li> 9 </li>
+											<li> <img src="media/comingsoon.png" alt="coming soon"/></li>
+											<li> <img src="media/comingsoon.png" alt="coming soon"/></li>
+											<li> <img src="media/comingsoon.png" alt="coming soon"/></li>
+											<li> <img src="media/comingsoon.png" alt="coming soon"/></li>
+											<li> <img src="media/comingsoon.png" alt="coming soon"/> </li>
+											<li> <img src="media/comingsoon.png" alt="coming soon"/> </li>
+											<li> <img src="media/comingsoon.png" alt="coming soon"/></li>
+											<li> <img src="media/comingsoon.png" alt="coming soon"/></li>
 										</ul>
 </section>
 	
@@ -189,6 +198,7 @@
 	<li id="readmeFill" >Readme</li>
 	<li id="contributionsFill" >Contributions</li>
 	<li id="imageFill" >Image</li>
+	<li id="infoFill"> Repository Information </li>
 	<li id="editNode">Edit</li>
 </ul>
 

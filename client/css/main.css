@@ -1,9 +1,11 @@
 @import url('https://fonts.googleapis.com/css?family=Barlow+Condensed');
+@import url('https://fonts.googleapis.com/css?family=Fauna+One');
 
 body{
 	background-color: #111;
 	color: #EEE;
 	font-family: 'Barlow Condensed', sans-serif;
+	word-wrap: break-word;
 }
 
 * {
@@ -22,13 +24,13 @@ body{
 }
 
 #preview{
-	position:absolute;
 	background-color:white;
 	width:500px;
 	height:600px;
-	top:3%;
-	right: 15%;
+	top:6%;
 	border-radius:5px;
+	float:right;
+	margin: 20px;
 }
 
 ul{
@@ -41,9 +43,8 @@ ul{
 #layout{
 	width:130px;
 	height:600px;
-	position:absolute;
-	top: 3%;
-	right:3%;
+	float:right;
+	margin-right:10%;
 }
 
 #layoutList{
@@ -68,6 +69,17 @@ ul{
 #dropdown{
 	display:none;
 	position:absolute;
+	border-radius: 3px;
+}
+
+#dropdown li{
+	padding: 5px;
+	padding-top: 2px;
+	padding-bottom: 2px;
+}
+
+#dropdown li:hover{
+	background-color: #111;
 }
 
 #repositoryControl{
@@ -114,15 +126,19 @@ ul{
 	min-width: 10px;
 	min-height: 10px;
 	margin: 5px;
+	border-radius: 3px;
+	padding: 10px;
+	overflow-y: auto;
+	overflow-x: hidden;
+	position: relative;
 }
 
 #textEditor{
 	display:none;
 }
 #codeGenerator{
-	position:absolute;
-	top: 10%;
-	left: 5%;
+	float:right;
+	margin:20px;
 }
 
 .codeDisplay{
@@ -132,27 +148,32 @@ ul{
 }
 
 #fileExplorer{
-	position:absolute;
-	top: 10%;
-	left: 27%;
-
+	float:right;
+	top: 8%;
+	margin:20px;
+	width: 225px;
+	height: 500px;
 }
 
 .directoryDiv{
 	width: 225px;
 	height: 500px;
+	overflow-y: auto;
+	overflow-x: hidden;
 	position:absolute;
 
 }
 
-.directoryDiv ul li span{
+.directoryDiv ul li a{
 	vertical-align: 50%;
-	margin-left: 10px
+	margin-left: 10px;
+	text-decoration: none;
+	color: white;
 }
 
 .directoryDiv ul{
-	height:100%;
 	width: 100%;
+	height: 480px;
 	border-radius: 5px;
 	padding:10px;
 }
@@ -162,6 +183,65 @@ ul{
 	top:3px;
 	right:3px;
 }
+
+.languageInfo{
+	position: absolute;
+	right: 2px;
+	bottom: 2px;
+}
+
+.readme{
+
+}
+
+.fileList{
+
+}
+
+.filenameHeader{
+
+}
+
+.fileContents{
+
+}
+
+.repoName{
+	font-family: 'Fauna One', serif;
+	font-size: 2em;
+	text-align: center;
+}
+
+.repoDescrip{
+	text-align: center;
+	font-style: italic;
+}
+
+.commitCount{
+	display:inline-block;
+	margin-right:50px;
+}
+
+.commitCount label{
+	font-weight: bold;
+	font-size: 1.2em;
+}
+
+.contribution label{
+	font-weight: bold;
+	font-size: 1.2em;
+}
+
+.commitCount span{
+	font-weight: bolder;
+	font-size: 2.3em;
+}
+
+.contribution span{
+	font-weight: bolder;
+	font-size: 2.3em;
+}
+
 
 
 /* TEMPORARY CODE UNTIL SERVER IS FULLY IMPLEMENTED */
@@ -179,17 +259,17 @@ ul{
 #n3{
 	height:50%;
 	float:left;
-	width:51%;
+	width:43%;
 	margin
 }
 
 #n4{
 	clear:both;
-	height: 20%;
+	height: 10%;
 }
 
 #n5{
-	height:10%;
+	height:6%;
 }
 
 
