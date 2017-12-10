@@ -76,6 +76,12 @@ var fileExplorer = function(){
 			}
 			else if(item.type == "file"){
 				icon.src = FILE_ICON;
+				
+				li.draggable = true;
+				li.ondragstart = function(e){
+					e.dataTransfer.setData("name", item.name);
+					e.dataTransfer.setData("download", item.download);
+				};
 			}
 			else{ //shouldn't ever happen, but.. life finds a way
 				icon.src=UNKNOWN_ICON;
@@ -88,11 +94,6 @@ var fileExplorer = function(){
 			}
 			li.appendChild(icon);
 			li.appendChild(a);
-			li.draggable = true;
-			li.ondragstart = function(e){
-				e.dataTransfer.setData("name", item.name);
-				e.dataTransfer.setData("download", item.download);
-			};
 
 			ul.appendChild(li);
 		});

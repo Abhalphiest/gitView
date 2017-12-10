@@ -7,6 +7,9 @@
 //----------------------------------------------
 
 var previewNodeManager = function(){
+
+	// bad juju to have this stuff + server calls in two different files, I should have set up a better way to handle external requests
+	// but this was a short, short project
 	const GITVIEW_URL = 'https://git-viewer.herokuapp.com/';
 	const GITVIEW_TEST_URL = "http://localhost:3000/";
 	var obj = {};
@@ -48,49 +51,52 @@ var previewNodeManager = function(){
 
 	obj.reset = function(){
 		this.setNode("titleDescripFill", nodes[0]);
+		this.setNode("readmeFill", nodes[1]);
+		this.setNode("fileListFill", nodes[2]);
+		this.setNode("contributionsFill", nodes[3]);
+		this.setNode("infoFill", nodes[4]);
 	};
 
 	obj.changeLayout = function(){
 
 	};
 
-	obj.fillNode = function(node, type, object){
+	obj.fillNode = function(node, object){
 		console.log(object);
-		if(node.value = "file"){
+		if(node.value == "file"){
 			// download the file so we can fill in the text
 
 			var xhttp = new XMLHttpRequest();
 			xhttp.onreadystatechange = function(){
 				if(this.readyState == 4 && this.status == 200){
 					// get the text, put in thing
-					var text = JSON.parse(this.responseText);
-					node.querySelector(".fileContents").innerText = text;
-				}
+					node.querySelector("pre").innerText = this.responseText;
+				}			
 				else{
-					node.querySelector(".fileContents").innerText = "Error fetching file contents";
+					node.querySelector("pre").innerText = "Error fetching file contents";
 				}
 			};
-			xhttp.open("GET", GITVIEW_TEST_URL + "repo/file?downloadUrl="+object.downloadlink);
+			xhttp.open("GET", GITVIEW_TEST_URL + "repo/file?downloadUrl="+object.link);
 			xhttp.send();
 
 			// set the file name
 			node.querySelector(".filenameHeader").innerText = object.name;
 
 
-		}else if(node.value = "fileList"){
+		}else if(node.value == "fileList"){
 			let ul = node.querySelector('ul');
 			let li = document.createElement('li');
 			li.innerText = object.name;
-			li.value = object.downloadlink;
+			li.value = object.link;
 			li.onclick = function(e){
-				fileExplorer.showFile(object.name, object.downloadlink);
+				fileExplorer.showFile(object.name, object.link);
 			}
 			ul.appendChild(li);
 
 
-		}else if(node.value = "image"){
+		}else if(node.value == "image"){
 
-			node.querySelector('img').src = object.downloadlink;
+			node.querySelector('img').src = object.link;
 
 		}
 		

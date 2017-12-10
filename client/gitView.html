@@ -7,6 +7,7 @@
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 	<script src="js/fileExplorer.js"></script>
 	<script src="js/previewNode.js"></script>
+	<script src="js/error.js"></script>
 	<script src="test.js"></script>
 	<script>
 	var getCurrentRepo = (function(){
@@ -47,7 +48,7 @@
 			fileExplorer.initialize();
 			previewNodeManager.initialize();
 
-			fileExplorer.reset(testDir.fileDirectory);
+			//fileExplorer.reset(testDir.fileDirectory);
 
 			
 
@@ -74,6 +75,18 @@
 						reposelect.appendChild(li);
 					}
 				}
+				else if(this.status === 503){ // status unavailable
+					if(this.responseText.includes("Rate Limit")){
+						showRateLimitError();
+					}
+					else{
+						showServerError(this.responseText);
+					}
+				}
+				else if(this.status === 500){ // the server is angry					
+					showServerError(this.responseText);
+				}
+
 			};
 			xhttp.open("GET", GITVIEW_TEST_URL + "user/repos?username="+username);
 			xhttp.send();
@@ -117,6 +130,18 @@
 					repo.contributionPercentage = advancedData.contributionPercentage;
 					fileExplorer.reset(repo.fileDirectory);
 				}
+				else if(this.status === 503){ // status unavailable
+					if(this.responseText.includes("Rate Limit")){
+						showRateLimitError();
+					}
+					else{
+						showServerError(this.responseText);
+					}
+				}
+				else if(this.status === 500){ // the server is angry					
+					showServerError(this.responseText);
+				}
+
 					
 			};
 			xhttp.open("GET", GITVIEW_TEST_URL + "repo?username="+currentUsername +"&reponame="+repo.name+"&owner=" +repo.owner);
@@ -208,6 +233,15 @@
 	<div id="editorOptions"> 
 
 	</div>
+</section>
+
+<section id="fileViewer">
+
+</section>
+
+<section id="errorDialog">
+	<header> Error </header>
+	<p> Error Message </p>
 </section>
 </body>
 </html>

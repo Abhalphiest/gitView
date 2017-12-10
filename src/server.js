@@ -169,13 +169,13 @@ function(request, response){
 
   	// self-documenting function names, split up this way because they
   	// require different API calls and modularity is for cool kids
-  	try{
-  		requestRepoAnalytics(params.owner, params.username, params.reponame, setRepoData);
-  		requestRepoReadme(params.owner, params.reponame, setRepoData);
-  		requestRepoFileDirectory(params.owner, params.reponame, setRepoData);
-  	}catch(err){
-  		checkRateLimit(response);
-  	}
+  	// I didn't want to pass in the response object to all of them, because it's only used for error catching,
+  	// but decided that I'd rather be sloppy than rearchitect for error handling at the last minute
+
+	requestRepoAnalytics(params.owner, params.username, params.reponame, setRepoData, response);
+	requestRepoReadme(params.owner, params.reponame, setRepoData, response);
+	requestRepoFileDirectory(params.owner, params.reponame, setRepoData, response);
+  	
 
 });
 
@@ -204,11 +204,9 @@ app.get('/user/repos', function(request, response){
 	// parse the request into a path and usable parameters
   	let parsedUrl = url.parse(request.url);
   	let params = query.parse(parsedUrl.query);
-  	try{
+  	
 	requestUserRepos(params.username,response);
-	}catch(err){
-  		checkRateLimit(response);
-  	}			     
+
 
 });
 
@@ -244,13 +242,16 @@ function requestUserRepos(username, response){
 	var callback = function(error, res, body){	
 		var repoObjs = JSON.parse(body);
 		var repos = [];
+
 		try{
 			repoObjs.forEach(function(repo){
 				repos.push(new Repository(repo));
 			});
 		}catch(err){
-			throw err;
-		}
+	  		checkRateLimit(response);
+	  		return;
+  		}		
+		
 		response.write(JSON.stringify(repos));
 		response.end();
 	};
@@ -300,10 +301,12 @@ function requestRepoFile(downloadUrl, response){
 //						following fields: 
 //											commitCount
 //											contributionPercentage
+// 			response: 		the response object for this server query
+//
 //
 // ---------------------------------------------------------------------------------
 
-function requestRepoAnalytics(owner, username, reponame, repoData){
+function requestRepoAnalytics(owner, username, reponame, repoData, response){
 
 	var callback = function(error, res, body){	
 		var contributorsArray = JSON.parse(body);
@@ -312,7 +315,10 @@ function requestRepoAnalytics(owner, username, reponame, repoData){
 		var additionsDeletions = 0;
 
 		console.dir(contributorsArray);
+		console.dir(error);
+
 		try{
+
 			contributorsArray.forEach(function(contributor){
 
 				var contributorAdditionsDeletions = 0;
@@ -329,8 +335,10 @@ function requestRepoAnalytics(owner, username, reponame, repoData){
 
 				totalAdditionsDeletions += contributorAdditionsDeletions;
 			});
-		}catch(error){
-			throw error;
+
+		}catch(err){
+			checkRateLimit(response);
+			return;
 		}
 
 		repoData('commitCount',commitCount);
@@ -342,7 +350,6 @@ function requestRepoAnalytics(owner, username, reponame, repoData){
 	};
 
 	sendGithubRequest("/repos/" + owner + "/" + reponame + "/stats/contributors", callback);
-	console.log("/repos/" + owner + "/" + reponame + "/stats/contributors");
 }
 
 
@@ -357,10 +364,12 @@ function requestRepoAnalytics(owner, username, reponame, repoData){
 //			repodata: 	the server call response object, this function populates the
 //						following fields: 
 //											readme
+// 			response: 		the response object for this server query
+//
 //
 // ---------------------------------------------------------------------------------
 
-function requestRepoReadme(owner, reponame, repoData){
+function requestRepoReadme(owner, reponame, repoData, response){
 
 	var callbackPrime = function(error, res, body){
 		repoData('readme', body);
@@ -369,7 +378,7 @@ function requestRepoReadme(owner, reponame, repoData){
 		// set up a request for the actual file
 		var fileURL = JSON.parse(body).download_url;
 		if(!fileURL){
-			throw error;
+			checkRateLimit(response);
 		}
 		var requestOptions = {
 			url:fileURL,
@@ -393,11 +402,11 @@ function requestRepoReadme(owner, reponame, repoData){
 //			repodata: 	the server call response object, this function populates the
 //						following fields: 
 //											fileDirectory
-//
+// 			response: 		the response object for this server query
 //
 // ---------------------------------------------------------------------------------
 
-function requestRepoFileDirectory(owner, reponame, repoData){
+function requestRepoFileDirectory(owner, reponame, repoData, response){
 
 	// this.. is about to suck.
 	// Note: this worked perfectly the first time I tested it and I felt cheated out
@@ -449,8 +458,10 @@ function requestRepoFileDirectory(owner, reponame, repoData){
 				}
 			}.bind(this)); // this is the parent node of this call, because of the .bind on callback
 		}catch(err){
-			throw err;
+			checkRateLimit(response);
+			return;
 		}
+		
 		// it is important to decrement the semaphore AFTER the call goes out, so that we never hit 0 outstanding requests
 		// in between closing and opening, when we aren't actually done yet.
 		sem.closeRequest(); 
@@ -505,9 +516,13 @@ function checkRateLimit(response){
 		var obj = JSON.parse(body);
 		if(obj.message.includes("rate limit exceeded")){ // salt and black pepper flavored error (we exceeded the rate limit, and also this is fairly boring)
 			response.status(503); // service unavailable error
+			response.write("Github Rate Limit Reached.");
+			response.end();
 		}
 		else{ // possibly out of date milk flavored error (I don't know what's wrong, but I'm suspicious)
 			response.status(500); // "fuck if I know" error
+			response.write("The server took its toys and went home.");
+			response.end();
 		}
 	};
 	sendGithubRequest('/rateLimit', callback);

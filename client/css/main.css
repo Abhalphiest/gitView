@@ -198,12 +198,16 @@ ul{
 
 }
 
-.filenameHeader{
+.fileList li{
+	background-color: #CCC;
+}
 
+.filenameHeader{
+	font-weight:bold;
 }
 
 .fileContents{
-
+	overflow-x: auto;
 }
 
 .repoName{
@@ -242,7 +246,18 @@ ul{
 	font-size: 2.3em;
 }
 
+#fileViewer{
+	display:none;
+}
 
+#errorDialog{
+	display:none;
+	width: 300px;
+	height: 100px;
+	position:absolute;
+	background-color: red;
+	z-index: 999;
+}
 
 /* TEMPORARY CODE UNTIL SERVER IS FULLY IMPLEMENTED */
 
