@@ -1,5 +1,14 @@
 "use strict";
 
+// ----------------------------------------------------
+//
+// genmodule.js handles dynamically creating HTML/CSS/JS
+// for the user. Ideally, it will be expanded to do things truly dynamically,
+// such as ensuring things are wide enough for content, etc, as well as implement the rest
+// of the functionality I wanted. For right now, it is extremely bare bones.
+//
+// ----------------------------------------------------
+
 
 
 // get our CSS and JS from the server files
@@ -7,19 +16,26 @@
 // js is a script tag (plaintext string)
 const css = require('./CSS.json');
 const js = require('./JS.json');
-const document = require('html-element').document;
+const document = require('html-element').document; // emulates a browser document for us so that HTML manipulation/creation is easier
 
 
-// Generate an html/css module for the data
-
+// -------------------------------------------------------------------------------------
+//
+// Name: buildModule
+//
+// Description: Generates an html/css module for the client data passed in
+//
 // Structure of the data coming in:
 //
-// nodes: an array of nodes with properties
+// nodes: an array of nodes with properties:
 //											index: the index of the node in the layout
 //											type: what kind of content is being held
 //											html: the raw html (includes repository data)
 // layout: which layout to use
 //
+// Returns an object with html, css, and js code (as individual properties) as plaintext strings.
+//
+// -------------------------------------------------------------------------------------
 
 function buildModule(data){
 	let exportobj = {};
