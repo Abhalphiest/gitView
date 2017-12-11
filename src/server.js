@@ -522,9 +522,9 @@ function requestRepoFileDirectory(owner, reponame, repoData, response){
 	// kind of a recursive thing going on here..
 	// because what I needed today was asynchronous recursion.
 	var callback = function(error, res, body){
-		var arr = JSON.parse(body);
-	
+		
 		try{
+			var arr = JSON.parse(body);
 			arr.forEach(function(item){
 				var newNode = new TreeNode(item.type, item.name, item.path, item.download_url);
 				this.children.push(newNode);

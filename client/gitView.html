@@ -8,7 +8,6 @@
 	<script src="js/fileExplorer.js"></script>
 	<script src="js/previewNode.js"></script>
 	<script src="js/error.js"></script>
-	<script src="test.js"></script>
 	<script>
 	var getCurrentRepo = (function(){
 		const GITVIEW_URL = 'https://git-viewer.herokuapp.com/';
@@ -19,6 +18,14 @@
 		var currentUsername = "";
 		var currentRepo = undefined;
 		
+		// --------------------------------------------------------------------------------
+		//
+		// Name: init
+		// 
+		// Description: initializes the client, mostly. Sets up a bunch of event listeners,
+		// 				initializes modules, etc.
+		//
+		// ---------------------------------------------------------------------------------
 		function init(){
 			// set up username search
 			document.querySelector("#username").onchange = function(){
@@ -54,15 +61,60 @@
 
 		}
 		
+
+
+		// --------------------------------------------------------------------------------
+		//
+		// Name: selectRepository
+		// 
+		// Description: Populates the repository information with advanced data if it does
+		//				not already have it (to conserve API calls), sets up the file directory,
+		//				sets up the default preview.
+		//
+		// ---------------------------------------------------------------------------------
+
+		function selectRepository(){
+			var repo = repositories[this.value];
+			currentRepo = repo;
+			document.querySelector("#repositorySelect").innerText = repo.name;
+			$('#repositoryList').slideUp();
+
+			if(!repositories[this.value].fileDirectory){
+				queryAdvancedData(repositories[this.value]);
+			}
+			else{
+				fileExplorer.reset(repo.fileDirectory);
+				previewNodeManager.reset();
+			}
+
+		}
+
+		// --------------------------------------------------------------------------------
+		//
+		// Name: queryUsername
+		// 
+		// Description: Asks the server very nicely for the list of repos the given user has
+		//				contributed to. Populates the repository select and makes it visible.
+		//				By the time the callback inside this function has executed, we have a
+		//				significant portion of the necessary data for each repo, stored in the
+		//				repositories array.
+		//
+		// Params: 		username: 	the github username to get repos for
+		// 
+		// ---------------------------------------------------------------------------------
+
 		function queryUsername(username){
-			// get list of repositories
 
 			//populate repositories
 			var reposelect = document.querySelector("#repositoryList");
 
 			var xhttp = new XMLHttpRequest();
 			xhttp.onreadystatechange = function(){
+
+				// quit the loading feedback on cursor, we're done loading
 				document.body.style.cursor = "default";
+
+				// handle the server response
 				if(this.readyState == 4 && this.status == 200){
 					currentUsername = username;
 					document.querySelector("#repositoryControl").style.opacity = 1.0; // make it visible if it was hidden
@@ -76,7 +128,7 @@
 						reposelect.appendChild(li);
 					}
 				}
-				else if(this.status === 503){ // status unavailable
+				else if(this.status === 503){ // status unavailable - usually rate limiting
 					if(this.responseText.includes("Rate Limit")){
 						showRateLimitError();
 					}
@@ -84,45 +136,42 @@
 						showServerError(this.responseText);
 					}
 				}
-				else if(this.status === 500){ // the server is angry					
+				else if(this.status === 500){ // server angry, server smash					
 					showServerError(this.responseText);
 				}
 
 			};
+
+
 			xhttp.open("GET", GITVIEW_TEST_URL + "user/repos?username="+username);
 			xhttp.send();
+
+			// UI feedback - show the user we're working on it!
 			document.body.style.cursor = "progress";
 
 		}
 
-		function selectRepository(){
-			var repo = repositories[this.value];
-			currentRepo = repo;
-			document.querySelector("#repositorySelect").innerText = repo.name;
-			$('#repositoryList').slideUp();
-
-			if(!repositories[this.value].fileDirectory){
-				queryAdvancedData(repositories[this.value]);
-
-				// for testing without the rate limit
-
-				// repositories[this.value].fileDirectory = testDir.fileDirectory;
-				// repositories[this.value].readme = testDir.readme;
-				// repositories[this.value].commitCount = testDir.commitCount;
-				// repositories[this.value].contributionPercentage = testDir.contributionPercentage;
-				// fileExplorer.reset(repositories[this.value].fileDirectory);
-
-			}
-			else{
-				fileExplorer.reset(repo.fileDirectory);
-			}
-
-		}
+		// --------------------------------------------------------------------------------
+		//
+		// Name: queryAdvancedData
+		// 
+		// Description: Asks the server very nicely for more specific data for the parameter
+		//				repository. This includes the readme, analytics, and the file directory tree..
+		//				Ideally this should be called as few times as possible - it will eat through
+		//				our rate limit like a teenage boy.
+		//
+		// Params: 		repo: 	the repository to fetch data for
+		// 
+		// ---------------------------------------------------------------------------------
 
 		function queryAdvancedData(repo){
+
 			var xhttp = new XMLHttpRequest();
+
 			xhttp.onreadystatechange = function(){
+
 				document.body.style.cursor = "default";
+
 				if(this.readyState == 4 && this.status == 200){
 					var advancedData = JSON.parse(this.responseText);
 					repo.readme = advancedData.readme;
@@ -143,38 +192,42 @@
 				else if(this.readyState == 4 && this.status === 500){ // the server is angry					
 					showServerError(this.responseText);
 				}
-
-					
+		
 			};
+
 			xhttp.open("GET", GITVIEW_TEST_URL + "repo?username="+currentUsername +"&reponame="+repo.name+"&owner=" +repo.owner);
 			xhttp.send();
+
 			document.body.style.cursor = "progress";
 		}
 
-		function previewNodeContextMenu(node,x,y){
-			console.log("clicked");
-			var dropdown = document.querySelector("#dropdown");
-			dropdown.style.left = x+"px";
-			dropdown.style.top = y+"px";
-			$('#dropdown').slideDown();
-			dropdown.value = node.id;
-		}
-
+		// --------------------------------------------------------------------------------
+		//
+		// Name: generateCode
+		// 
+		// Description: Asks the server very nicely for HTML/CSS/JS for the user that will
+		//				hopefully replicate the preview window for them in their own webpage.
+		//
+		// 
+		// ---------------------------------------------------------------------------------
 		function generateCode(){
 
 			// make sure it is exactly what the server expects
 			var moduleObj = {
 				nodes: [],
-				layout: 0 	// hard coded for now, laziness
+				layout: 0 	// hard coded for now - we only have one layout and this could be easily grabbed
+							// from a state variable once we have more
 			};
 			Object.seal(moduleObj);
 
+			// populate the object
 			previewNodeManager.flattenNodes(moduleObj);
 
 			var xhttp = new XMLHttpRequest();
+
 			xhttp.onreadystatechange = function(){
+
 				document.body.style.cursor = "default";
-				console.dir(this.responseText);
 				if(this.readyState == 4 && this.status == 200){
 					var code = JSON.parse(this.responseText);
 					document.querySelector("#HTML").querySelector(".codeDisplay").innerText = code.html;
@@ -182,17 +235,42 @@
 					document.querySelector("#JS").querySelector(".codeDisplay").innerText = code.js;
 					document.querySelector('#codeGenerator').scrollIntoView({ behavior: 'smooth' });
 				}
-				else if(this.readyState == 4) // the server is angry			
+				else if(this.readyState == 4) // we have angered the old gods			
 					showServerError(this.responseText);
 					
 			};
+
 			xhttp.open("POST", GITVIEW_TEST_URL + "genCode");
-			xhttp.setRequestHeader("Content-Type", "application/json");
+			xhttp.setRequestHeader("Content-Type", "application/json"); // for POST
 			xhttp.send(JSON.stringify(moduleObj));
+
 			document.body.style.cursor = "progress";
 
 		}
+
+
+		// --------------------------------------------------------------------------------
+		//
+		// Name: previewNodeContextMenu
+		// 
+		// Description: shows the context menu for the preview, nothing super interesting
+		//
+		// Params: 		node: 	the selected preview node
+		//				x:  	x position of cursor (where to put TL corner)
+		//				y: 		y position of cursor
+		// 
+		// ---------------------------------------------------------------------------------
+		function previewNodeContextMenu(node,x,y){
+			var dropdown = document.querySelector("#dropdown");
+			dropdown.style.left = x+"px";
+			dropdown.style.top = y+"px";
+			$('#dropdown').slideDown();
+			dropdown.dataset.value = node.id;
+		}
+
 		
+		
+		// this is the only thing that needs to be visible outside of this IIFE
 		return function getCurrentRepo(){return currentRepo};
 	}());
 	</script>
@@ -230,11 +308,11 @@
 </section>
 	
 <section id="preview"> 
-	<div id="n1" class="previewNode" value="none"> </div>
-	<div id="n2" class="previewNode" value="none"> </div>
-	<div id="n3" class="previewNode" value="none"> </div>
-	<div id="n4" class="previewNode" value="none"> </div>
-	<div id="n5" class="previewNode" value="none"> </div>
+	<div id="n1" class="previewNode" data-value="none"> </div>
+	<div id="n2" class="previewNode" data-value="none"> </div>
+	<div id="n3" class="previewNode" data-value="none"> </div>
+	<div id="n4" class="previewNode" data-value="none"> </div>
+	<div id="n5" class="previewNode" data-value="none"> </div>
 </section>
 
 
@@ -253,9 +331,9 @@
 </section>
 
 <!-- Hidden elements (shown contextually) -->
-<ul id="dropdown">
-	<li id="titleFill">Title</li>
-	<li id="titleDescripFill">Title &amp; Description</li>
+<ul id="dropdown" data-value="none">
+	<li id="titleFill" data-value="none">Title</li>
+	<li id="titleDescripFill" data-value="none">Title &amp; Description</li>
 	<li id="fileFill" >File</li>
 	<li id="fileListFill" >File List</li>
 	<li id="readmeFill" >Readme</li>

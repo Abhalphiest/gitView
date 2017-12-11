@@ -2,7 +2,8 @@
 
 //----------------------------------------------
 //
-// previewNode.js handles 
+// previewNode.js handles the preview part of the client, and the
+// packaging of data to send to the server to create HTML/CSS/etc
 //
 //----------------------------------------------
 
@@ -12,9 +13,17 @@ var previewNodeManager = function(){
 	// but this was a short, short project
 	const GITVIEW_URL = 'https://git-viewer.herokuapp.com/';
 	const GITVIEW_TEST_URL = "http://localhost:3000/";
-	var obj = {};
-	var nodes = [];
-	var dropdown = undefined;
+	var obj = {};				// IIFE return
+	var nodes = [];				// html elements
+	var dropdown = undefined; 	// context menu on right click
+
+	// --------------------------------------------------------------------------------
+	//
+	// Name: initialize
+	// 
+	// Description: Sets up the nodes in the backend, sticks on a bunch of event handlers
+	//
+	// ---------------------------------------------------------------------------------
 
 	obj.initialize = function(){
 		nodes = document.querySelectorAll(".previewNode");
@@ -23,7 +32,7 @@ var previewNodeManager = function(){
 		var dropdownOptions = dropdown.querySelectorAll('li');
 		dropdownOptions.forEach(function(option){
 			option.onclick = function(){
-				obj.setNode(this.id, nodes[dropdown.value.substr(1) - 1]);
+				obj.setNode(this.id, nodes[dropdown.dataset.value.substr(1) - 1]);
 			};
 		});
 
@@ -49,6 +58,15 @@ var previewNodeManager = function(){
 		});
 	};
 
+
+	// --------------------------------------------------------------------------------
+	//
+	// Name: reset
+	// 
+	// Description: Returns the preview to the default setup (to be used on a repo change, for example)
+	//
+	// ---------------------------------------------------------------------------------
+
 	obj.reset = function(){
 		this.setNode("titleDescripFill", nodes[0]);
 		this.setNode("readmeFill", nodes[1]);
@@ -57,13 +75,34 @@ var previewNodeManager = function(){
 		this.setNode("infoFill", nodes[4]);
 	};
 
+
+	// --------------------------------------------------------------------------------
+	//
+	// Name: changeLayout
+	// 
+	// Description: This feature was cut with extreme prejudice.
+	//
+	// ---------------------------------------------------------------------------------
+
 	obj.changeLayout = function(){
 
 	};
 
+
+	// --------------------------------------------------------------------------------
+	//
+	// Name: fillNode
+	// 
+	// Description: Adds actual content to nodes that are not auto-populated (i.e. images, file lists, etc)
+	//
+	// Params: 		node:   the node to fill
+	// 				object: the thing to fill it with
+	//
+	// ---------------------------------------------------------------------------------
+
 	obj.fillNode = function(node, object){
-		console.log(object);
-		if(node.value == "file"){
+
+		if(node.dataset.value == "file"){
 			// download the file so we can fill in the text
 
 			var xhttp = new XMLHttpRequest();
@@ -83,18 +122,18 @@ var previewNodeManager = function(){
 			node.querySelector(".filenameHeader").innerText = object.name;
 
 
-		}else if(node.value == "fileList"){
+		}else if(node.dataset.value == "fileList"){
 			let ul = node.querySelector('ul');
 			let li = document.createElement('li');
 			li.innerText = object.name;
-			li.value = object.link;
+			li.dataset.value = object.link;
 			li.onclick = function(e){
 				fileExplorer.showFile(object.name, object.link);
 			}
 			ul.appendChild(li);
 
 
-		}else if(node.value == "image"){
+		}else if(node.dataset.value == "image"){
 
 			node.querySelector('img').src = object.link;
 
@@ -103,18 +142,35 @@ var previewNodeManager = function(){
 
 	};
 
+
+	// --------------------------------------------------------------------------------
+	//
+	// Name: setNode
+	// 
+	// Description: Changes the type of a node - i.e., the type of content it holds, and
+	//				auto-populates when appropriate (for example, the title can be autopopulated,
+	//				but an image cannot).
+	//
+	// Params: 		type:   the type to change to
+	// 				node: 	the node to change
+	//
+	// ---------------------------------------------------------------------------------
+
 	obj.setNode= function(type, node){
 		var repository = getCurrentRepo();
+		console.log(node);
 		if(!repository)
 			return;
 
-		console.log(node);
-
 		switch(type){
+
+
+			// A title node only displays the title of the repository, nothing else
+
 			case "titleFill":{
-				if(node.value == "title") // don't bother clobbering if no change
+				if(node.dataset.value == "title") // don't bother clobbering if no change
 					return;
-				node.value = "title";
+				node.dataset.value = "title";
 				node.innerHTML = ""; // clear the inside of the node
 
 				// create the title
@@ -125,11 +181,14 @@ var previewNodeManager = function(){
 				node.appendChild(header);
 				break;
 			}
+
+			// A titleDescrip node displays the title, gitHub description (if it exists)
+			// and the primary (programming) language of the repository
+
 			case "titleDescripFill":{
-				console.log('titleDescrip');
-				if(node.value == "titleDescrip")
+				if(node.dataset.value == "titleDescrip")
 					return;
-				node.value = "titleDescrip";
+				node.dataset.value = "titleDescrip";
 				node.innerHTML = ""; 
 
 				// title
@@ -160,17 +219,20 @@ var previewNodeManager = function(){
 
 				break;
 			}
+
+			// a file node displays the contents of a single file + the file name
+
 			case "fileFill":{
-				console.log('file');
-				if(node.value == "file")
+				if(node.dataset.value == "file")
 					return;
-				node.value = "file";
+				node.dataset.value = "file";
 				node.innerHTML = "";
 
 				// make a place for the file to go, eventually
 				// needs a file name (kind of like a title)
-				// and line numbers
 				// and text (to be monospaced)
+				// future plans are to use https://github.com/syntaxhighlighter/syntaxhighlighter/ to make it pretty
+				// but for now it's just a <pre>
 
 				let header = document.createElement('header');
 				header.classList.add('filenameHeader');
@@ -187,11 +249,14 @@ var previewNodeManager = function(){
 
 				break;
 			}
+
+			// a file list node displays a list of featured files, that can be viewed 
+			// with a double click
+
 			case "fileListFill":{
-				console.log('file list');
-				if(node.value == "fileList")
+				if(node.dataset.value == "fileList")
 					return;
-				node.value = "fileList";
+				node.dataset.value = "fileList";
 				node.innerHTML = "";
 
 				// need a list of files, but a lot of the building
@@ -207,11 +272,14 @@ var previewNodeManager = function(){
 
 				break;
 			}
+
+			// a read me node shows the readme (the .md file is not parsed, so it may
+			// be extremely ugly for complex readmes)
+
 			case "readmeFill":{
-				console.log('readme');
-				if(node.value == "readme")
+				if(node.dataset.value == "readme")
 					return;
-				node.value = "readme";
+				node.dataset.value = "readme";
 				node.innerHTML = "";
 
 				let p = document.createElement('p');
@@ -221,10 +289,16 @@ var previewNodeManager = function(){
 
 				break;
 			}
+
+			// a contributions node gives some basic analytics about the user's
+			// contributions to the repository - the number of commits and the percentage
+			// of the repo that they contributed.
+
 			case "contributionsFill":{
-				if(node.value == "contributions")
+				if(node.dataset.value == "contributions")
 					return;
-				node.value = "contributions";
+				node.dataset.value = "contributions";
+				node.innerHTML = "";
 
 				// need two things - commit count and contribution percentage
 
@@ -243,7 +317,7 @@ var previewNodeManager = function(){
 				let contributionLabel = document.createElement('label');
 				contributionLabel.innerText = "Project Contribution Percentage: ";
 				let contributionValue = document.createElement('span');
-				contributionValue.innerText = (repository.contributionPercentage * 100) + "%";
+				contributionValue.innerText = Math.round(repository.contributionPercentage * 100) + "%";
 
 				contributionSpan.appendChild(contributionLabel);
 				contributionSpan.appendChild(contributionValue);
@@ -252,10 +326,13 @@ var previewNodeManager = function(){
 				node.appendChild(contributionSpan);
 				break;
 			}
+
+			// an image node just shows an image..
+
 			case "imageFill":{
-				if(node.value == "image")
+				if(node.dataset.value == "image")
 					return;
-				node.value = "image";
+				node.dataset.value = "image";
 				node.innerHTML = "";
 
 				//use the alt text to our advantage!
@@ -266,8 +343,12 @@ var previewNodeManager = function(){
 				node.appendChild(img);
 				break;
 			}
+
+			// an info node only has a link to the repository currently, but it
+			// should (and will) have more information after more development
+
 			case "infoFill":{
-				node.value = "info";
+				node.dataset.value = "info";
 				node.innerHTML = "";
 
 				// link to the repository
@@ -279,10 +360,9 @@ var previewNodeManager = function(){
 
 				//let dates = document.createElement('span');
 				//dates.classList.add('infoDates');
-				// last updated
+				// last updated and date generated
+				// TO BE IMPLEMENTED
 
-
-				// date generated
 				node.appendChild(a);
 				break;
 			}
@@ -291,14 +371,26 @@ var previewNodeManager = function(){
 			}
 		}
 
+		console.log(node);
 	};
+
+	// --------------------------------------------------------------------------------
+	//
+	// Name: flattenNodes
+	// 
+	// Description: Packages nodes into JS objects to be used by the server when
+	//				making code for the user.
+	//
+	// Params: 		moduleObj : the object to be populated by this function. Should be sealed.
+	//
+	// ---------------------------------------------------------------------------------
 
 	obj.flattenNodes = function(moduleObj){
 
 		// constructor
 		function flatNode(index, node){
 			this.index = index;
-			this.type = node.value;
+			this.type = node.dataset.value;
 			this.html = node.innerHTML;
 		}
 
@@ -309,8 +401,13 @@ var previewNodeManager = function(){
 	};
 
 
-	// this functionality did not make it in by submission,
-	// please ignore.
+	// --------------------------------------------------------------------------------
+	//
+	// Name: editNode
+	// 
+	// Description: This feature was cut with extreme prejudice.
+	//
+	// ---------------------------------------------------------------------------------
 
 	obj.editNode = function(node){
 

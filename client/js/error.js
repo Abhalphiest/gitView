@@ -1,5 +1,21 @@
 "use strict";
 
+// -----------------------------------------
+//
+//  error.js handles errors. It only earned its own file
+//  because I once had a beautiful dream of it being more robust than this..
+//
+// ----------------------------------------
+
+
+// --------------------------------------------------------------------------------
+//
+// Name: showRateLimitError
+// 
+// Description: A self-documenting function name if ever I saw one..
+//
+// ---------------------------------------------------------------------------------
+
 function showRateLimitError(){
 	let errordialog = document.querySelector("#errorDialog");
 	errordialog.querySelector('header').innerText = "Github Rate Limit Reached";
@@ -13,6 +29,14 @@ function showRateLimitError(){
 	
 	
 }
+
+// --------------------------------------------------------------------------------
+//
+// Name: showServerError
+// 
+// Description: A self-documenting function name if ever I saw one..
+//
+// ---------------------------------------------------------------------------------
 
 function showServerError(errorMessage){
 	let errordialog = document.querySelector("#errorDialog");
