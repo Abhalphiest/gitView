@@ -69,6 +69,7 @@ var previewNodeManager = function(){
 	// ---------------------------------------------------------------------------------
 
 	obj.reset = function(){
+
 		this.setNode("titleDescripFill", nodes[0]);
 		this.setNode("readmeFill", nodes[1]);
 		this.setNode("fileListFill", nodes[2]);
@@ -169,8 +170,7 @@ var previewNodeManager = function(){
 			// A title node only displays the title of the repository, nothing else
 
 			case "titleFill":{
-				if(node.dataset.value == "title") // don't bother clobbering if no change
-					return;
+				
 				node.dataset.value = "title";
 				node.innerHTML = ""; // clear the inside of the node
 
@@ -187,8 +187,7 @@ var previewNodeManager = function(){
 			// and the primary (programming) language of the repository
 
 			case "titleDescripFill":{
-				if(node.dataset.value == "titleDescrip")
-					return;
+				
 				node.dataset.value = "titleDescrip";
 				node.innerHTML = ""; 
 
@@ -224,8 +223,7 @@ var previewNodeManager = function(){
 			// a file node displays the contents of a single file + the file name
 
 			case "fileFill":{
-				if(node.dataset.value == "file")
-					return;
+				
 				node.dataset.value = "file";
 				node.innerHTML = "";
 
@@ -255,8 +253,7 @@ var previewNodeManager = function(){
 			// with a double click
 
 			case "fileListFill":{
-				if(node.dataset.value == "fileList")
-					return;
+				
 				node.dataset.value = "fileList";
 				node.innerHTML = "";
 
@@ -278,8 +275,7 @@ var previewNodeManager = function(){
 			// be extremely ugly for complex readmes)
 
 			case "readmeFill":{
-				if(node.dataset.value == "readme")
-					return;
+				
 				node.dataset.value = "readme";
 				node.innerHTML = "";
 
@@ -296,8 +292,7 @@ var previewNodeManager = function(){
 			// of the repo that they contributed.
 
 			case "contributionsFill":{
-				if(node.dataset.value == "contributions")
-					return;
+				
 				node.dataset.value = "contributions";
 				node.innerHTML = "";
 
@@ -331,8 +326,7 @@ var previewNodeManager = function(){
 			// an image node just shows an image..
 
 			case "imageFill":{
-				if(node.dataset.value == "image")
-					return;
+				
 				node.dataset.value = "image";
 				node.innerHTML = "";
 
@@ -348,6 +342,7 @@ var previewNodeManager = function(){
 			// should (and will) have more information after more development
 
 			case "infoFill":{
+				
 				node.dataset.value = "info";
 				node.innerHTML = "";
 
