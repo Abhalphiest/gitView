@@ -48,7 +48,7 @@
 			fileExplorer.initialize();
 			previewNodeManager.initialize();
 
-			//fileExplorer.reset(testDir.fileDirectory);
+			document.querySelector('#generateButton').onclick = generateCode;
 
 			
 
@@ -56,12 +56,13 @@
 		
 		function queryUsername(username){
 			// get list of repositories
-			console.log("querying username "+ username);
+
 			//populate repositories
 			var reposelect = document.querySelector("#repositoryList");
 
 			var xhttp = new XMLHttpRequest();
 			xhttp.onreadystatechange = function(){
+				document.body.style.cursor = "default";
 				if(this.readyState == 4 && this.status == 200){
 					currentUsername = username;
 					document.querySelector("#repositoryControl").style.opacity = 1.0; // make it visible if it was hidden
@@ -90,6 +91,7 @@
 			};
 			xhttp.open("GET", GITVIEW_TEST_URL + "user/repos?username="+username);
 			xhttp.send();
+			document.body.style.cursor = "progress";
 
 		}
 
@@ -115,22 +117,22 @@
 				fileExplorer.reset(repo.fileDirectory);
 			}
 
-			previewNodeManager.reset();
 		}
 
 		function queryAdvancedData(repo){
 			var xhttp = new XMLHttpRequest();
 			xhttp.onreadystatechange = function(){
+				document.body.style.cursor = "default";
 				if(this.readyState == 4 && this.status == 200){
-					console.dir(this.responseText);
 					var advancedData = JSON.parse(this.responseText);
 					repo.readme = advancedData.readme;
 					repo.fileDirectory = advancedData.fileDirectory;
 					repo.commitCount = advancedData.commitCount;
 					repo.contributionPercentage = advancedData.contributionPercentage;
 					fileExplorer.reset(repo.fileDirectory);
+					previewNodeManager.reset();
 				}
-				else if(this.status === 503){ // status unavailable
+				else if(this.readyState == 4 && this.status === 503){ // status unavailable
 					if(this.responseText.includes("Rate Limit")){
 						showRateLimitError();
 					}
@@ -138,7 +140,7 @@
 						showServerError(this.responseText);
 					}
 				}
-				else if(this.status === 500){ // the server is angry					
+				else if(this.readyState == 4 && this.status === 500){ // the server is angry					
 					showServerError(this.responseText);
 				}
 
@@ -146,6 +148,7 @@
 			};
 			xhttp.open("GET", GITVIEW_TEST_URL + "repo?username="+currentUsername +"&reponame="+repo.name+"&owner=" +repo.owner);
 			xhttp.send();
+			document.body.style.cursor = "progress";
 		}
 
 		function previewNodeContextMenu(node,x,y){
@@ -155,6 +158,39 @@
 			dropdown.style.top = y+"px";
 			$('#dropdown').slideDown();
 			dropdown.value = node.id;
+		}
+
+		function generateCode(){
+
+			// make sure it is exactly what the server expects
+			var moduleObj = {
+				nodes: [],
+				layout: 0 	// hard coded for now, laziness
+			};
+			Object.seal(moduleObj);
+
+			previewNodeManager.flattenNodes(moduleObj);
+
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function(){
+				document.body.style.cursor = "default";
+				console.dir(this.responseText);
+				if(this.readyState == 4 && this.status == 200){
+					var code = JSON.parse(this.responseText);
+					document.querySelector("#HTML").querySelector(".codeDisplay").innerText = code.html;
+					document.querySelector("#CSS").querySelector(".codeDisplay").innerText = code.css;
+					document.querySelector("#JS").querySelector(".codeDisplay").innerText = code.js;
+					document.querySelector('#codeGenerator').scrollIntoView({ behavior: 'smooth' });
+				}
+				else if(this.readyState == 4) // the server is angry			
+					showServerError(this.responseText);
+					
+			};
+			xhttp.open("POST", GITVIEW_TEST_URL + "genCode");
+			xhttp.setRequestHeader("Content-Type", "application/json");
+			xhttp.send(JSON.stringify(moduleObj));
+			document.body.style.cursor = "progress";
+
 		}
 		
 		return function getCurrentRepo(){return currentRepo};
@@ -174,6 +210,7 @@
 		</div>
 		<ul id="repositoryList"></ul>
 	</div>
+	<button id="generateButton"> Generate Code </button>
 </section>
 
 
@@ -203,6 +240,7 @@
 
 <!-- File Explorer -->
 <section id="fileExplorer">
+	<header> File Explorer </header>
 	<div id="rootDir" class="directoryDiv">
 	</div>
 </section>
@@ -224,7 +262,8 @@
 	<li id="contributionsFill" >Contributions</li>
 	<li id="imageFill" >Image</li>
 	<li id="infoFill"> Repository Information </li>
-	<li id="editNode">Edit</li>
+	<!-- This feature got super cut! -->
+	<!-- <li id="editNode">Edit</li> -->
 </ul>
 
 <div id="overlay"> </div>
@@ -242,6 +281,7 @@
 <section id="errorDialog">
 	<header> Error </header>
 	<p> Error Message </p>
+	<button> OK </button>
 </section>
 </body>
 </html>

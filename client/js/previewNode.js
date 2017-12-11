@@ -108,6 +108,8 @@ var previewNodeManager = function(){
 		if(!repository)
 			return;
 
+		console.log(node);
+
 		switch(type){
 			case "titleFill":{
 				if(node.value == "title") // don't bother clobbering if no change
@@ -260,12 +262,12 @@ var previewNodeManager = function(){
 				let img = document.createElement('img');
 				img.classList.add("nodeImage");
 				img.src = "notanimage.png";
-				img.alt = "Edit this node or drag and drop an image file to choose an image.";
+				img.alt = "Drag and drop an image file to choose an image.";
 				node.appendChild(img);
 				break;
 			}
 			case "infoFill":{
-				node.value = "link";
+				node.value = "info";
 				node.innerHTML = "";
 
 				// link to the repository
@@ -290,6 +292,25 @@ var previewNodeManager = function(){
 		}
 
 	};
+
+	obj.flattenNodes = function(moduleObj){
+
+		// constructor
+		function flatNode(index, node){
+			this.index = index;
+			this.type = node.value;
+			this.html = node.innerHTML;
+		}
+
+
+		for(let i = 0; i < nodes.length; i++){
+			moduleObj.nodes.push(new flatNode(i, nodes[i]));
+		}
+	};
+
+
+	// this functionality did not make it in by submission,
+	// please ignore.
 
 	obj.editNode = function(node){
 

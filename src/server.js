@@ -17,10 +17,14 @@
 const express = require('express');					// main server framework
 const url = require('url');							// url parsing
 const query = require('querystring');				// query string parsing
+const bodyParser = require('body-parser');			// for POST requests in express
+
 const requestHandler = require('request');			// http/https requests
 const env = require('node-env-file');				// local environment variables
 const githubStrategy = require('passport-github').Strategy;	// oauth2
 const passport = require('passport');
+
+const moduleGenerator = require('./genmodule.js');	// for generating HTML/CSS
 
 const port = process.env.PORT || process.env.NODE_PORT || 3000;
 const GITHUB_API_URL = "https://api.github.com";
@@ -47,37 +51,37 @@ const GITHUB_API_URL = "https://api.github.com";
 //
 
 // if environment variables are not defined, grab them locally
-env(".env");
+// env(".env");
 
 // get our environmental variables for authentication
-const GITHUB_CLIENT_ID = process.env['GITHUB_CLIENT_ID'];
-const GITHUB_CLIENT_SECRET = process.env['GITHUB_CLIENT_SECRET'];
-const GITHUB_PERSONAL_TOKEN = process.env['GITHUB_PERSONAL_TOKEN'];
+// const GITHUB_CLIENT_ID = process.env['GITHUB_CLIENT_ID'];
+// const GITHUB_CLIENT_SECRET = process.env['GITHUB_CLIENT_SECRET'];
+// const GITHUB_PERSONAL_TOKEN = process.env['GITHUB_PERSONAL_TOKEN'];
 
 
 // set up oauth2 authentication using passport and the github strategy
-passport.use(new githubStrategy({
-  	clientID: GITHUB_CLIENT_ID,
-  	clientSecret: GITHUB_CLIENT_SECRET,
-  	callbackURL: "http://127.0.0.1:3000/auth/github/callback"
-  },
-  function(accessToken, refreshToken, profile, cb) {
-    User.findOrCreate({ githubId: profile.id }, function (err, user) {
-      return cb(err, user);
-    	});
-	}
-));
+// passport.use(new githubStrategy({
+//   	clientID: GITHUB_CLIENT_ID,
+//   	clientSecret: GITHUB_CLIENT_SECRET,
+//   	callbackURL: "http://127.0.0.1:3000/auth/github/callback"
+//   },
+//   function(accessToken, refreshToken, profile, cb) {
+//     User.findOrCreate({ githubId: profile.id }, function (err, user) {
+//       return cb(err, user);
+//     	});
+// 	}
+// ));
 
 // we don't have an elegant way to do this (would need a db or something, probably)
 // so we just serialize and deserialize the whole user. Deal with it.
 
-passport.serializeUser(function(user, cb) {
-  cb(null, user);
-});
+// passport.serializeUser(function(user, cb) {
+//   cb(null, user);
+// });
 
-passport.deserializeUser(function(obj, cb) {
-  cb(null, obj);
-});
+// passport.deserializeUser(function(obj, cb) {
+//   cb(null, obj);
+// });
  
 
 //------------------------------------
@@ -88,13 +92,17 @@ passport.deserializeUser(function(obj, cb) {
 
 var app = express();
 
+app.use(bodyParser.urlencoded({extended:false}));
+app.use(bodyParser.json());
+
+
 // session management
-app.use(require('express-session')({ secret: 'keyboard cat', resave: true, saveUninitialized: true }));
+//app.use(require('express-session')({ secret: 'keyboard cat', resave: true, saveUninitialized: true }));
 
 
 // use passport on all requests
-app.use(passport.initialize());
-app.use(passport.session());
+// app.use(passport.initialize());
+// app.use(passport.session());
 
 // CORS access for all requests
 app.use(function(req, res, next) {
@@ -118,12 +126,14 @@ app.get('/',
 // be calling these, and they won't have a great time if they do.
 //
 // ---------------------------------------------------------------------------------
-app.get('/auth/github', passport.authenticate('github'));
+// app.get('/auth/github', passport.authenticate('github'));
 
-app.get('/auth/github/callback', 
-		passport.authenticate('github', {failureRedirect: '/login'}),
-		function(req,res){res.redirect('/')
-	});
+// app.get('/auth/github/callback', 
+// 		passport.authenticate('github', {failureRedirect: '/login'}),
+// 		function(req,res){res.redirect('/')
+// 	});
+
+
 
 //--------------------------------------------------------------------------------
 //
@@ -136,12 +146,11 @@ app.get('/auth/github/callback',
 //		File Directory Tree (variety of information, including directory structure, download links, etc)
 //
 // ---------------------------------------------------------------------------------
-app.get('/repo', //require('connect-ensure-login').ensureLoggedIn(),
-function(request, response){
+app.get('/repo', function(request, response){
+
 	// parse the request into a path and usable parameters
   	let parsedUrl = url.parse(request.url);
   	let params = query.parse(parsedUrl.query);
-	//console.log('finding repo');
   	var repoData = {
   		readme: null,
   		commitCount: null,
@@ -210,12 +219,25 @@ app.get('/user/repos', function(request, response){
 
 });
 
+// --------------------------------------------------------------------------------
+//
+// The /genCode path only accepts post methods - it generates HTML, CSS, and JS
+// for the client module, then sends it all back to the requester. Look at the 
+// code in genmodule.js for more information on the specifics of this.
+//
+// ---------------------------------------------------------------------------------
+app.post("/genCode", function(request, response){
+	console.dir(request.body)
+	let obj = moduleGenerator.buildModule(request.body); // object already parsed by body-parser
+	response.write(JSON.stringify(obj));
+	response.status(200);
+	response.end();
+});
+
   
 
 app.listen(port);
 
-
-console.log("Listening on localhost:" + port);
 
 // --------------------------------------------------------------------------------
 //
@@ -274,7 +296,6 @@ function requestUserRepos(username, response){
 function requestRepoFile(downloadUrl, response){
 
 	var callback = function(error, res, body){
-		//console.dir(body);
 		response.write(body);
 		response.end();
 	};
@@ -310,12 +331,15 @@ function requestRepoAnalytics(owner, username, reponame, repoData, response){
 
 	var callback = function(error, res, body){	
 		var contributorsArray = JSON.parse(body);
+
+		if(!Array.isArray(contributorsArray)){  // this sometimes happens, I don't know why. Try one more time.
+			sendGithubRequest("/repos/" + owner + "/" + reponame + "/stats/contributors", retryCallback);
+			return;
+		}
+
 		var totalAdditionsDeletions = 0;
 		var commitCount = 0;
 		var additionsDeletions = 0;
-
-		console.dir(contributorsArray);
-		console.dir(error);
 
 		try{
 
@@ -348,6 +372,58 @@ function requestRepoAnalytics(owner, username, reponame, repoData, response){
 			repoData('contributionPercentage', 0);
 		
 	};
+
+	// For some reason that I never got to the bottom of,
+	// sometimes this request and ONLY this request returns an empty object with no error
+	// instead of the array we wanted. This seems to happen completely randomly, and it is 
+	// probably my fault somehow.. but it is non-critical data. So I try one more time and 
+	// then give up (the retry usually works).
+
+	// In future work I would actually handle this well...
+
+	var retryCallback = function(error, res, body){
+		var contributorsArray = JSON.parse(body);
+
+		var totalAdditionsDeletions = 0;
+		var commitCount = 0;
+		var additionsDeletions = 0;
+
+		
+		if(!Array.isArray(contributorsArray)){  // didn't work on retry, just give up
+			totalAdditionsDeletions = NaN; // flags to show we didn't get actual data
+			commitCount = NaN;
+		}
+		else{
+			try{
+
+				contributorsArray.forEach(function(contributor){
+
+					var contributorAdditionsDeletions = 0;
+
+					contributor.weeks.forEach(function(week){
+						contributorAdditionsDeletions += week.a;
+						contributorAdditionsDeletions += week.d;
+					});
+
+					if(contributor.author.login == username){
+						commitCount = contributor.total;
+						additionsDeletions = contributorAdditionsDeletions;
+					}
+
+					totalAdditionsDeletions += contributorAdditionsDeletions;
+				});
+
+			}catch(err){
+				checkRateLimit(response);
+				return;
+			}
+		}
+		repoData('commitCount',commitCount);
+		if(totalAdditionsDeletions != 0)
+			repoData('contributionPercentage',additionsDeletions/totalAdditionsDeletions);
+		else
+			repoData('contributionPercentage', 0);
+	}
 
 	sendGithubRequest("/repos/" + owner + "/" + reponame + "/stats/contributors", callback);
 }
@@ -510,9 +586,14 @@ function sendGithubRequest(path, callback){
 // ---------------------------------------------------------------------------------
 
 function checkRateLimit(response){
+	if(response.finished){
+		return;
+	}
 
-	console.log('checking rate limit');
 	var callback = function(error, res, body){
+		if(response.finished){
+			return;
+		}
 		var obj = JSON.parse(body);
 		if(obj.message.includes("rate limit exceeded")){ // salt and black pepper flavored error (we exceeded the rate limit, and also this is fairly boring)
 			response.status(503); // service unavailable error

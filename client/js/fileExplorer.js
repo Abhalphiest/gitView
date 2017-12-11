@@ -24,7 +24,6 @@ var fileExplorer = function(){
 	};
 
 	obj.reset = function(fileDirectory){
-		console.dir(fileDirectory);
 		fileTree = fileDirectory;
 		rootDir.innerHTML = "";
 		for(let i = 0; i < dirStack.length; i++){ // clear the stack
@@ -53,7 +52,7 @@ var fileExplorer = function(){
 	};
 
 	obj.showFile = function(name, download){
-		console.log("showing file " + download);
+		window.open(download,'_blank');
 	}
 
 	function populateDirectory(children, directory){
@@ -73,25 +72,36 @@ var fileExplorer = function(){
 					console.log('clicked');
 					obj.down(item);
 				}
+				a.onclick = function(e){
+					e.preventDefault();
+				}
+				a.ondblclick = function(e){
+					e.preventDefault();
+				}
 			}
 			else if(item.type == "file"){
 				icon.src = FILE_ICON;
-				
+
 				li.draggable = true;
 				li.ondragstart = function(e){
 					e.dataTransfer.setData("name", item.name);
 					e.dataTransfer.setData("download", item.download);
 				};
+
+				a.onclick = function(e){
+					e.preventDefault();
+				}
+				a.ondblclick = function(e){
+				e.preventDefault(); // do not redirect for <a> tag
+				obj.showFile(item.name, item.download);
+			}
 			}
 			else{ //shouldn't ever happen, but.. life finds a way
 				icon.src=UNKNOWN_ICON;
 			}
 			a.innerText = item.name;
 			a.href = item.download;
-			a.onclick = function(e){
-				e.preventDefault(); // do not redirect for <a> tag
-				obj.showFile(item.name, item.download);
-			}
+			
 			li.appendChild(icon);
 			li.appendChild(a);
 
