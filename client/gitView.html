@@ -43,7 +43,7 @@
 			document.querySelectorAll(".previewNode").forEach(function(node){
 					node.addEventListener('contextmenu', function(e){
 					e.preventDefault();
-					previewNodeContextMenu(e.target,e.clientX, e.clientY);
+					previewNodeContextMenu(node,e.clientX, e.clientY);
 					return false;
 				});
 			});
@@ -143,7 +143,7 @@
 			};
 
 
-			xhttp.open("GET", GITVIEW_TEST_URL + "user/repos?username="+username);
+			xhttp.open("GET", GITVIEW_URL + "user/repos?username="+username);
 			xhttp.send();
 
 			// UI feedback - show the user we're working on it!
@@ -195,7 +195,7 @@
 		
 			};
 
-			xhttp.open("GET", GITVIEW_TEST_URL + "repo?username="+currentUsername +"&reponame="+repo.name+"&owner=" +repo.owner);
+			xhttp.open("GET", GITVIEW_URL + "repo?username="+currentUsername +"&reponame="+repo.name+"&owner=" +repo.owner);
 			xhttp.send();
 
 			document.body.style.cursor = "progress";
@@ -240,7 +240,7 @@
 					
 			};
 
-			xhttp.open("POST", GITVIEW_TEST_URL + "genCode");
+			xhttp.open("POST", GITVIEW_URL + "genCode");
 			xhttp.setRequestHeader("Content-Type", "application/json"); // for POST
 			xhttp.send(JSON.stringify(moduleObj));
 
@@ -332,8 +332,8 @@
 
 <!-- Hidden elements (shown contextually) -->
 <ul id="dropdown" data-value="none">
-	<li id="titleFill" data-value="none">Title</li>
-	<li id="titleDescripFill" data-value="none">Title &amp; Description</li>
+	<li id="titleFill">Title</li>
+	<li id="titleDescripFill">Title &amp; Description</li>
 	<li id="fileFill" >File</li>
 	<li id="fileListFill" >File List</li>
 	<li id="readmeFill" >Readme</li>

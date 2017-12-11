@@ -30,6 +30,7 @@ var previewNodeManager = function(){
 		dropdown = document.querySelector("#dropdown");
 
 		var dropdownOptions = dropdown.querySelectorAll('li');
+
 		dropdownOptions.forEach(function(option){
 			option.onclick = function(){
 				obj.setNode(this.id, nodes[dropdown.dataset.value.substr(1) - 1]);
@@ -115,7 +116,7 @@ var previewNodeManager = function(){
 					node.querySelector("pre").innerText = "Error fetching file contents";
 				}
 			};
-			xhttp.open("GET", GITVIEW_TEST_URL + "repo/file?downloadUrl="+object.link);
+			xhttp.open("GET", GITVIEW_URL + "repo/file?downloadUrl="+object.link);
 			xhttp.send();
 
 			// set the file name
@@ -158,7 +159,7 @@ var previewNodeManager = function(){
 
 	obj.setNode= function(type, node){
 		var repository = getCurrentRepo();
-		console.log(node);
+
 		if(!repository)
 			return;
 
@@ -338,7 +339,6 @@ var previewNodeManager = function(){
 				//use the alt text to our advantage!
 				let img = document.createElement('img');
 				img.classList.add("nodeImage");
-				img.src = "notanimage.png";
 				img.alt = "Drag and drop an image file to choose an image.";
 				node.appendChild(img);
 				break;
@@ -370,8 +370,6 @@ var previewNodeManager = function(){
 				obj.editNode(node);
 			}
 		}
-
-		console.log(node);
 	};
 
 	// --------------------------------------------------------------------------------
